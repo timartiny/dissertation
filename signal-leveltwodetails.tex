@@ -1,0 +1,86 @@
+\chapter{Protocols for Two-Way Sealed Sender Conversations}
+\label{sec:signal-leveltwodetails}
+
+\begin{figure}[ht]
+  \centering
+  \scriptsize
+  \begin{tabular}{l|l|l|c}
+  \toprule
+  {\bf Notation} & {\bf Type} & {\bf Meaning} & {\bf Anonymous} \\
+  \midrule
+  $P_s$ & User & Sender/Initiator & - \\
+  $P_r$ & User & Receiver & - \\
+  % $(\pksign,\sksign)$ & Keypair for $\bsscheme$ & Service provider keypair for signing anonymous credentials \\
+  % $\sigma$ & Unblinded signature for $\bsscheme$ & Signature over an ephemeral public key \\
+  $(\pk_s, \sk_s)$  & $\sealedsenderencryptionscheme$ Keys & Sender/Initiator key & N \\
+    $(\pk_r, \sk_r)$  & $\sealedsenderencryptionscheme$ Keys & Receiver key & N \\
+    $(\pk_{e}, \sk_{e})$  & $\sealedsenderencryptionscheme$ Keys & Ephemeral key & Y \\
+  $(\pk_{es}, \sk_{es})$  & $\sealedsenderencryptionscheme$ Keys & Sender/Initiator eph. key & Y\\
+  $(\pk_{er}, \sk_{er})$  & $\sealedsenderencryptionscheme$ Keys & Receiver eph. key & Y \\
+  % $\deliverytoken_r$  &  Delivery token for $\sealedsenderauthscheme$ & Receiver longterm, non-anonymous delivery token \\
+  % $\deliverytoken_{er}$  &  Delivery token for $\sealedsenderauthscheme$ & Receiver ephemeral, anonymous delivery token \\
+  % $\deliverytoken_{es}$  &  Delivery token for $\sealedsenderauthscheme$ & Sender ephemeral, anonymous delivery token 
+  \end{tabular}
+  \caption{Notation for two-way sealed sender protocols}
+\end{figure}
+
+This appendix provides more details for the two-way sealed sender solution discussed in \cref{sec:signal-leveltwosolution}.
+
+
+Recall how this solution works: after an
+initiator sends a sealed sender message to the long-term identity of the
+receiver communicating the sender's ephemeral identity, the receiver
+generates a fresh, ephemeral identity of their own and sends it to the
+sender's ephemeral identity via sealed sender.  After this initial
+exchange, the two users communicate using only their ephemeral
+identities and sealed sender messages, in both directions (two-way).
+
+The protocol proceeds as follows: When some conversation initiator $P_s$ wants to start a conversation with a user $P_r$, the initiator executes \textbf{Initiate Two-Way Sealed Conversation} (see below). $P_s$ starts by generating a keypair $(\pk_{es}, \sk_{es})$ and registering $\pk_{es}$ with the service provider.  $P_s$ then runs the {\bf Change Mailbox} protocol (see below), which informs the receiver of $\pk_{es}$ by sending a message to $\pk_r$.  The receiver $P_r$ then generates a keypair $(\pk_{er}, \sk_{er})$ and registers $\pk_{er}$ with the service provider.  Finally, the $P_r$ runs the {\bf Change Mailbox} protocol, informing $P_s$ about $\pk_{er}$ by sending a message to $\pk_{es}$.  $P_s$ and $P_r$ communicate using {\bf Send message}, {\bf Open Connection}, and {\bf Push Message} as in \cref{sec:signal-levelonesolution} (for brevity, these protocols have not been replicated below).
+
+
+\smallskip \noindent
+\textbf{Initiate Two-Way Sealed Conversation to $\receiverr$:}
+\begin{enumerate}[noitemsep]
+  \item $\senders$ looks up the $\receiverr$'s long-term key $\pk_r$
+  \item $\senders$ generates keys $(\pk_{es}, \sk_{es}) \leftarrow \sealedsenderencryptionscheme.\sealedsenderencryptiongen(1^\securityparameter)$ and opens a mailbox with public key $\pk_{es}$% and signature $\sigma_{es}$
+  \item $\senders$ runs the subroutine {\bf Change Mailbox}$(P_r, \pk_{es}, \sk_s, \pk_r)$
+  \item $\receiverr$ generates keys $(\pk_{er}, \sk_{er}) \leftarrow \sealedsenderencryptionscheme.\sealedsenderencryptiongen(1^\securityparameter)$ and opens a mailbox with public key $\pk_{er}$
+  \item $\receiverr$ runs the subroutine {\bf Change Mailbox}$(P_s, \pk_{er}, \sk_r, \pk_{es})$
+  \item $\senders$ records $(\receiverr, \pk_{er}, \pk_{es}, \sk_{es})$ and $\receiverr$ records $(\senders, \pk_{es}, \pk_{er}, \sk_{er})$ in their respective conversation tables
+  \item Both $\senders$ and $\receiverr$ use {\bf send message} to send a read-receipt acknowledgment to $\pk_{er}$ and $\pk_{es}$ respectively. 
+\end{enumerate}
+
+\smallskip \noindent
+\textbf{ Change Mailbox}$(P_r, \pk_e, \sk_s, \pk_r)$:
+\begin{enumerate}[noitemsep]
+  \item User changing mailbox $\senders$ does the following (note that this user may be the conversation initiator or the conversation receiver)
+  \begin{enumerate}[noitemsep]
+  \item encrypts \\ $c \leftarrow \sealedsenderencryptionscheme.\sealedsenderencryptionenc(\texttt{``init''} \| \pk_e, \sk_s, \pk_r)$
+  % \item Initiator generates the authentication message required to prove that they are allowed to send to the receiver $a \leftarrow \sealedsenderauthscheme.\sealedsenderauthschemeauth(\pk_r, \deliverytoken_r)$
+  \item connects to the server provider anonymously and sends $c \| \pk_e$ to the service provider addressed to $\pk_r$.
+%  \item appends $(\receiverr, \pk_r, \pk_{es}, \sk_{es})$ to the conversation table
+  \end{enumerate}
+  
+  \item The service provider opens a mailbox with public key $\pk_e$ and delivers $c$ to $pk_r$ (sealed sender) 
+    
+  \item When the other user $\receiverr$ calls receive message, it decrypts and verifies \\$(\texttt{``init''} \| \pk_e, \pk_s) \leftarrow \sealedsenderencryptionscheme.\sealedsenderencryptionvdec(\sk_r, c)$.
+  %\\ and verifies\\ $\sealedsenderencryptionscheme.\sealedsenderencryptionverify(\texttt{``init''} \| \pk_e, x, \pk_s)=1$.
+\end{enumerate}
+
+
+% \paragraph*{Send Message}
+% \begin{enumerate}
+%   \item Sender looks up an entry $(\receiverr, \pk_{er}, \deliverytoken_{er}, \pk_{es}, \deliverytoken_{es}).$
+%   \item Sender encrypts $c \leftarrow \sealedsenderencryptionscheme.\sealedsenderencryptionenc(\pk_{er}, m)$ and generates $a \leftarrow \sealedsenderauthscheme.\sealedsenderauthschemeauth(\pk_{er}, \deliverytoken_{er}).$  Sender connects to the service provider anonymously and sends $a \| c$ for $\pk_{er}$
+
+%   \item The service provider verifies $\sealedsenderauthscheme.\sealedsenderauthschemeverify(a, \pk_{er})=1$, and drops it otherwise.  The service provider sets the message as pending in the mailbox associated with $\pk_{er}$
+
+% \end{enumerate}
+
+
+
+% \paragraph*{Receive Message}
+% \begin{enumerate}
+%   \item Receiver opens anonymous connection to service provider and demonstrates ownership over public key $\pk_{er}.$  If the service provider is convinced, it sends all pending messages $a_i \| c_i$ to the receiver.
+%   \item Receiver decrypts all messages as $(m_i,x,\pk_s) \leftarrow \sealedsenderencryptionscheme.\sealedsenderencryptiondec(\sk_{er}, c_i)$ and verifies that they are correct, {\em i.e. } $\sealedsenderencryptionscheme.\sealedsenderencryptionverify(m_i,x,\pk_s)=1.$
+% \end{enumerate}

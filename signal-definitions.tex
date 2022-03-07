@@ -1,0 +1,81 @@
+
+\begin{figure*}
+	\centering
+	\begin{tcolorbox}[enhanced,sharp corners,colback=white,boxrule=0.3mm,left=1mm]
+	\footnotesize
+	% \small
+		\vspace{0.5\baselineskip}
+		Ideal Functionality For Sealed Sender Conversation System
+		
+		
+		\vspace{0.5\baselineskip}
+		\hrule 
+		\vspace{0.5\baselineskip}
+	% The ideal functionality is parameterized by a metadata generation function $\metadatagen: \{0,1\}^* \rightarrow \{0,1\}^*$, the transparency function $\leakagefunctionality$, the global policy function $\policyfunctionality$, and the target functionality $\inscopefunctionality$. The three latter functions are as defined above. We have several parties:
+	\begin{itemize}
+		\item $P_1, \ldots, P_n$: A set of $n$ (possibly corrupt) users of the system
+		\item $\serviceprovider$: A single corrupt service provider that is in charge of relaying messages between users
+		\item Active Conversation Table $\activeconvotable$ with entries of the form $(\texttt{convo-id}, \texttt{initiator}, \texttt{receiver})$, Delivery Pending Message Table $\pendingtable$ with entries of the form $(\texttt{convo-id}, \texttt{sender}, \texttt{receiver}, \texttt{plaintext})$
+		% \item \gsk{Switch error to silent failure?}
+	\end{itemize}
+
+		\medskip
+		{\bf Start Conversation:} Upon receiving a message $(\startconvo, \receiver)$ from a user $\sender$, the ideal functionality generates a unique identifier $\convoid,$ and performs the following: 
+			\begin{itemize}
+				\item If $\sender$ or $\receiver$ is corrupt, send $(\approvenewconvocorrupt, \sender, \receiver, \convoid)$ to $\serviceprovider$
+				\item If both $\sender$ and $\receiver$ are honest, $(\approvenewconvo, \receiver, \convoid)$ to $\serviceprovider$
+			\end{itemize}
+		$\serviceprovider$ responds to either message with $(\approve)$ or $(\disapprove)$
+			\begin{itemize}
+				\item If  $\serviceprovider$ responds with $(\disapprove)$, the ideal functionality halts
+				\item If $\serviceprovider$ responds with $(\approve),$ the ideal functionality sends $(\newconvo, \sender, \receiver, \convoid)$ to both $\sender$ and $\receiver$ and adds $(\convoid, \sender, \receiver)$ to $\activeconvotable$.
+			\end{itemize}
+
+% 		\medskip
+% \gsk{Pull Notifications}
+
+% 		\medskip
+% 		{\bf Send Message:} Upon receiving a message $(\sendmessagealg, \receiver, \convoid, m)$ from party $\sender$, the trusted party checks the active conversations table $\activeconvotable$ for an entry $(\convoid, \receiver, \sender)$ or $(\convoid, \sender, \receiver)$.  If either entry exists, the ideal functionality adds $(\receiver, \convoid, m)$ to $\pendingtable$.  Finally, the ideal functionality sends a notification.
+
+% 		\medskip
+% 		{\bf Receive Message:} Upon receiving a message $(\receivemessagealg, \sender, \convoid, m)$ from party $\receiver$, the trusted party checks $\pendingtable$ for any entries of the form $(\receiver, \convoid, m).$  If such entries are found, the ideal functionality sends $(\approvesendmessage, \convoid, |m|)$ to $\serviceprovider$.  $\serviceprovider$ responds with either $(\approve)$ or $(\disapprove)$
+% 			\begin{itemize}
+% 				\item If $\serviceprovider$ responds with $(\disapprove)$, the ideal functionality sends $(\error)$ to $\sender$ and halts
+% 				\item If $\serviceprovider$ responds with $(\approve),$ the ideal functionality sends $(\sentmessage, \sender, \receiver, \convoid, m)$ to both $\sender$ and $\receiver$ and removes the entry from $\pendingtable$
+% 			\end{itemize}
+
+		% \medskip
+% \gsk{Push Notifications} 
+
+		\medskip
+		{\bf Send Message:} Upon receiving a message $(\sendmessagealg, \convoid, m)$ from party $\sender$, the ideal functionality checks the active conversations table $\activeconvotable$ for an entry $(\convoid, \receiver, \sender)$ or $(\convoid, \sender, \receiver)$.  If no such entry exists, the ideal functionality drops the message.  The ideal functionality generates a unique identifier $\msgid$ and performs the following:
+		\begin{itemize}
+			\item If there is an entry and $\receiver$ is corrupted, the ideal functionality sends $(\notifysendmessagecorrupt, \convoid, \msgid, m, \sender, \receiver)$ to $\serviceprovider$, and add $(\sender,\receiver,\convoid, \msgid, m)$ to $\pendingtable.$
+			\item If an entry  $(\convoid, \sender, \receiver)$ exists, send $(\notifysendmessage, \convoid, \msgid, \receiver, | m |)$ to $\serviceprovider$, and add $(\sender,\receiver,\convoid, \msgid, m)$ to $\pendingtable.$
+			\item If an entry $(\convoid, \receiver, \sender)$ exists, send $(\notifyanonymoussendmessage, \convoid, \msgid, | m |)$ to $\serviceprovider$, and add $(\sender,\receiver,\convoid, \msgid, m)$ to $\pendingtable.$
+
+
+
+			% \item If there is an entry and $\receiver$ is corrupted, the ideal functionality sends $(\approvesendmessageanonymous, \convoid, m, \receiver)$ to $\serviceprovider$.  $\serviceprovider$ responds with either $(\approve)$ or $(\disapprove).$ 
+			% \item If there is an entry $(\convoid, \receiver, \sender)$ the ideal functionality sends $(\approvesendmessageanonymous, \convoid, |m|)$ to $\serviceprovider$.  $\serviceprovider$ responds with either $(\approve)$ or $(\disapprove)$
+			% \item If there is an entry $(\convoid, \sender, \receiver)$ the ideal functionality sends $(\approvesendmessage, \convoid, |m|, \receiver)$ to $\serviceprovider$.  $\serviceprovider$ responds with either $(\approve)$ or $(\disapprove)$
+			% \item If neither is found, the ideal functionality send 
+		\end{itemize}
+
+		\medskip
+		{\bf Receive Message:} Upon receiving a message $(\receivemessagealg, \convoid)$ from party $\receiver$, the ideal functionality checks $\activeconvotable$ for an entry $(\convoid, \receiver, \sender)$ or $(\convoid, \sender, \receiver)$.  If such an entry exist, it performs one of the following:
+		\begin{itemize}
+			\item If $\sender$ is corrupt, the ideal functionality then sends $(\injectcorruptmessagesalg, \convoid, \sender, \receiver)$ to $\serviceprovider$, which responds with tuples of the form $(\convoid, \sender, \receiver, m)$. The ideal functionality then sends $(\sentmessage, \sender, \receiver, \convoid, m)$ to $\receiver$ for each such tuple.
+
+			\item If there is an entry $(\convoid, \receiver, \sender)$ in $\activeconvotable$ and entries $(\sender, \receiver, \convoid, \msgid, m)$ in $\pendingtable$, the ideal functionality sends $(\approvesendmessageanonymous, \convoid, \msgid, |m|)$ to $\serviceprovider$ for each such entry.  $\serviceprovider$ responds to each message with either $(\approve, \msgid)$ or $(\disapprove, \msgid)$. If $\serviceprovider$ responds with $(\approve, \msgid),$ the ideal functionality sends $(\sentmessage, \sender, \receiver, \convoid, m)$ to $\receiver$.
+
+			\item If there is an entry $(\convoid, \sender, \receiver)$ in $\activeconvotable$ and entries $(\sender, \receiver, \convoid, \msgid, m)$ in $\pendingtable$, the ideal functionality sends $(\approvesendmessage, \convoid, \msgid, |m|, \receiver)$ to $\serviceprovider$ for each such entry.  $\serviceprovider$ responds to each message with either $(\approve, \msgid)$ or $(\disapprove, \msgid)$. If $\serviceprovider$ responds with $(\approve, \msgid),$ the ideal functionality sends $(\sentmessage, \sender, \receiver, \convoid, m)$ to $\receiver$.
+		\end{itemize}
+
+	\end{tcolorbox}	
+\caption{Ideal functionality formalizing the leakage to the service provider for a one-way sealed sender conversation.}
+\label{fig:signal-definition}
+\end{figure*}
+
+
+ 

@@ -1,0 +1,35 @@
+\input{signal-definitions}
+
+\section{Formalizing Sealed Sender Conversations}\label{sec:signal-secdef}
+Sealed sender messages were initially introduced in Signal to obscure the communication graph.  As we have just shown, the current instantiation fails to accomplish this goal.  Before we present our solutions to this problem, we briefly discuss formalizations for the properties that a perfect implementation should accomplish.  We call such a system a {\em sealed sender conversation}, because unlike sealed sender messages, the anonymity properties must be maintained throughout the lifetime of the conversation.
+
+Our goal in introducing this formalization is to specify {\em exactly} how much information a service provider can learn when it runs a sealed sender conversation protocol.  In a sealed sender conversation between two users, the mediating service provider should learn only the identity of the {\em receiver} of the first message, no matter the messaging pattern of the users. Unlike sealed sender messages, the anonymity of the sender must be maintained across the full conversation, not just individual messages.  As such, we require a definition that argues about the privacy of the users at the {\em conversation} level, rather than at the message level, as in sealed sender messaging.  We formalize sealed sender conversations by giving an {\em ideal functionality}, presented in \cref{fig:signal-definition}.  We note that this definition fundamentally reasons over conversations, even if it does this in a message-by-message way by using an internal conversation table.  Our ideal functionality captures our desired properties by specifying the maximum permissible information leakage for each message, depending on which member of the conversation sent the message.
+
+Our ideal functionality models a sealed sender conversation and explicitly leaks certain information to the service provider.  Users are able to do three things: (1) start a conversation, (2) send messages in an existing conversation, and (3) receive messages.  When a user starts a new conversation, the initial receiver's identity is leaked to the service provider, along with a unique conversation identifier $\convoid.$  All subsequent messages sent in this conversation are linked with the identifier $\convoid.$  If they are being sent to the initial receiver, their destination is leaked.  Otherwise, the service provider learns that the message is part of some known $\convoid,$ but never learns the identity of that end of the conversation.  While we do not explicitly include timestamps in our modeling, timestamps are implicitly captured by our model because the service provider is notified immediately whenever the ideal functionality receives a message.  This is equivalent because the absolute time at which a message is sent is not important in our context, just the relative time between messages.
+
+Users receive messages via pull notifications.  These pull notifications leak no more information than the message itself does; if the receiver is anonymous, then the pull notification process leaks no information about the receiver.  While we formalize this notion using pull notifications, this is compabile with Signal-style push notifications, where the receiver and the server maintain long-lived TLS connections.  These communication channels are equivalent to a continuous pull notification, and thus a simulator can easily translate between the two communication paradigms.
+%Finally, users may connect to their service provider via a VPN, such as Orbot~\cite{guardianproject}, which will obfuscate the identity of the user connected to the service.
+Finally, because the service provider may arbitrarily drop messages, we give the service provider the power to approve or deny any pull notification request. 
+
+While leaking the conversation identifier might seem like a relaxation of sealed sender messages, we note that our timing attack succeeds by guessing with high likelihood the sender of a message.  As such, Signal's sealed sender does not meet this ideal functionality, as our
+timing correlation attack in \cref{sec:signal-attack} shows. This is because the $\convoid$ of a message, although not explicitly sent with the ciphertext, can be inferred with high probability by its timing.  One final note is our definition does not prevent a service provider from using auxiliary information about a conversation ({\em e.g.} time zone information) to reidentify the initiator of the conversation.  Such attacks are incredibly difficult to formalize and are beyond the scope of our work.  Rather, we only require that the {\em protocol} itself cannot be used to reidentify the participants.
+
+
+% recipient of the first message in a conversation. That is, if Alice sends a
+% message to Bob, the ideal functionality reveals that a message is being sent to
+% Bob. After this, the ideal functionality does not reveal the identity of anyone
+% else, and subsequent messages are sent to an anonymous conversation identifier.
+% For instance, Bob's responses (delivery tokens, response messages, etc)
+% will be sent to an anonymous conversation ID that is not associated with Alice.
+%An adversary in this example would see a message to Bob, and then later messages
+%to anonymous IDs.
+
+% Thus, the ideal functionality is that we explicitly leak the recipient---but not
+% the initiator---of a sealed sender conversation. We note that this also
+% explicitly leaks the pattern and timing of messages that Bob sends and receives, but
+% does not reveal who the other party (e.g. Alice) is in the conversation. We also
+% note that Signal's sealed sender does not meet this ideal functionality, as our
+% timing correlation attack in Section~\ref{sec:attack} shows. This is because
+% in Signal, Bob's responses are sent to Alice, revealing her identity to the
+% adversary.
+% In contrast, our ideal functionality does not leak Alice's identity.

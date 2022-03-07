@@ -1,0 +1,30 @@
+\section{Conclusion}
+
+
+In this work we analyze and improve upon Signal's sealed sender messaging protocol.
+We first identify a type of statistical disclosure attack (SDA) that would allow
+Signal to identify who is messaging a user despite sealed sender hiding message
+sources. We perform a theoretical and simulation-based analysis on this attack,
+and find that it can work after only a handful of messages have been sent to a
+user. Our attack is possible because of two features of the sealed sender
+protocol: (1) metadata (specifically, recipient and timing) is still revealed,
+and (2) Signal sends automatic delivery receipts back to the sender immediately
+after a message is received.
+
+We suggest a protection against this attack, in which users anonymously register
+ephemeral mailbox identities with Signal, and use those to communicate rather
+than long-term identities such as phone numbers. To prevent abuse, we suggest
+Signal use anonymous credentials, implemented with blind signatures, and
+implement a prototype that demonstrates our solution is performant and cost-effective
+to deploy.
+
+% If we want more fluff, but could also cut
+Signal has taken a first step into providing anonymous communication to
+millions of users with the sealed sender feature. Signal's design
+puts practicality first, and as a result, does not provide strong protection
+against even known disclosure attacks. Nonetheless, we believe this effort can
+be improved upon without sacrificing practicality, and we hope that our work
+provides a clear path toward this end.
+
+
+% In this work we describe a novel, timing based attack on Signal's sealed sender messaging protocol.  Our attack allows a malicious service provider to overcome the anonymity provided by the protocol to identify the participants in a conversation.  Our attack is possible because of two features of the sealed sender protocol: (1) messages sent using the protocol still reveal some metadata, specifically recipient and timing, and (2) Signal sends delivery receipts back to the sender immediately after a message is received.  We simulate messaging environments to illustrate the effectiveness of our attack.  We suggest a protection against this attack, in which users anonymously register ephemeral identities with Signal.  To prevent abuse, we suggest Signal use anonymous credentials, implemented with blind signatures.  We implement and evaluate our solution and estimate that it would cost Signal approximately \$40 each month to support 10 million ephemeral identities a day.

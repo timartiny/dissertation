@@ -1,0 +1,37 @@
+\subsection{Protecting against Denial of Service}\label{sec:signal-levelthreesolution}
+
+Both constructions presented above require users to anonymously register
+public keys with the service provider.  This provides an easy way for
+attackers to launch a denial of service attack% on the service provider
+: simply anonymously register massive numbers of public keys.
+%Importantly, there is no way for the service provider to remove malicious users, as their identity cannot be determined.  It is unlikely that a service provider would be willing to deploy either one-way or two-way sealed sender conversations at the cost of enabling this attack.
+As such, we now turn our attention to bounding the number of ephemeral identities a user can have open, without compromising the required privacy properties.
+
+We build on {\em anonymous credential} systems, such as \cite{C:Chaum82}.  Intuitively, we want each user in the system to be issued a fixed number of anonymous credentials, each of which can be exchanged for the ability to register a new public key. To implement this system, we add two additional protocols to those presented above%
+%, which we describe below
+: {\bf Get signed mailbox key} and {\bf Open a mailbox}.
+
+In {\bf Get signed mailbox key}, a user $P_s$ authenticates to the service provider with their long-term identity $\pk_s$ and uses a blind signature scheme to obliviously get a signature $\sigma_{es}$ over fresh public key $\pk_{es}$.  We denote the service provider's keypair $(\pksign, \sksign)$.  In {\bf Open a mailbox}, a user $P_s$ anonymously connects to the service provider and presents $(\pk_{es}, \sigma_{es})$.  If $\sigma_{es}$ is valid and the service provider has never seen the public key $\pk_{es}$ before, the service provider opens a mailbox for the public key $\pk_{es}.$  These protocols are described below:
+
+\medskip \noindent
+\textbf{Get signed mailbox key}
+\begin{enumerate}[noitemsep]
+  \item User authenticates using their longterm public key.  Server checks that the client has not exceeded their quota of generated ephemeral identities.
+  \item Client generates $(\pk_e, \sk_e) \leftarrow \sealedsenderencryptionscheme.\sealedsenderencryptiongen(1^\securityparameter)$ 
+  \item Client blinds the ephemeral public key $b \leftarrow \bsscheme.\bsblind(\pk_e, \pksign; r)$ with $r \leftarrow \bin^{\secparam}.$
+  \item Server signs the client's blinded public key with $s_{blind} \leftarrow \bsscheme.\bssign(b,\sksign)$ and returns the blinded signature to the client.
+  \item \label[step]{getsigned:extract}
+    Client extracts the real signature locally with $\sigma_e \leftarrow \bsscheme.\bsextract(s_{blind}, \pksign; r)$
+\end{enumerate}
+
+\medskip \noindent
+\textbf{Open a mailbox}
+\begin{enumerate}[noitemsep]
+  \item Client connects anonymously to the server and sends $\pk_e, \sigma_e$
+  \item Server verifies $\bsscheme.\bsverify(\pksign, \sigma_e) = 1$ and checks $\pk_e$ has not been used yet.  
+  \item Server registers an anonymous mailbox with key $\pk_e$ with an expiration date.
+\end{enumerate}
+
+Integrating these protocols into one-way sealed sender conversations and two-way sealed sender conversations is straightforward.  At the beginning of each time period ({\em e.g.} a day), users run {\bf Get signed mailbox key} up to $k$ times, where $k$ is an arbitrary constant fixed by the system.  Then, whenever a user needs to open a mailbox, they run the {\bf Open a mailbox} protocol.  Sending and receiving messages proceeds as before.
+
+It is important that (1) the signing key for the blind signature scheme public key $\pksign$ be updated regularly, and (2) anonymous mailboxes will eventually expire.  Without these protections, malicious users {\em eventually} accumulate enough anonymous credentials or open mailboxes that they can effectively launch the denial of service attack described above.  Additionally, each time period's $\pksign$ must be known to all users; otherwise the server could use a unique key to sign each user's credentials, re-identifying the users.

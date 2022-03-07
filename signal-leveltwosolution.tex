@@ -1,0 +1,56 @@
+\subsection{Two-way Sealed Sender Conversations}
+\label{sec:signal-leveltwosolution}
+
+
+While the construction above successfully realizes sealed sender
+conversations,
+the identity of the receiver is still leaked to
+the service provider.  Ideally, we would like for both users in a
+conversation to communicate using only ephemeral identities, so that
+the service provider sees only the flow of messages in a conversation
+but does not learn either party's long-term identity.
+However, this again leads to a bootstrapping problem: if
+both users use fresh, anonymous identities, {\em how do they exchange
+this ephemeral contact information while remaining anonymous?} 
+
+While heavyweight cryptography (such as PIR or ORAMs)
+may provide a more robust solution,
+in this work we focus on scalable solutions that might plausibly be
+adopted by secure messaging platforms.  As such, we present a natural
+extension of our one-way sealed sender conversation protocol.
+
+After an initiator creates an ephemeral key pair, opens a new mailbox,
+and sends this to the
+receiver, the receiver responds by doing the same thing: creating a
+second ephemeral key pair, opening a second mailbox, and sending this
+back to the initiator as part of the initial delivery receipt. After
+this, \emph{both} the conversation initiator and receiver will have
+conversation table entries of the form
+\(\personx, \pk_{e1}, \pk_{e2}, \sk_{e2}\), with two different ephemeral
+keys for sending and receiving messages in the conversation.
+
+This requires minimal changes to the previous protocol. Essentially, the
+\textbf{Initiate} protocol gains another section for the recipient to
+create their own ephemeral identity, but the \textbf{Send},
+\textbf{Open Connection}, and \textbf{Push Message} protocols are identical. In \cref{sec:signal-leveltwodetails}
+we provide the full details of these updated protocols, along with an
+additional protocol \textbf{Change Mailbox} which is used to update an
+ephemeral key pair for one side of an existing conversation.
+
+\medskip \noindent
+\textbf{Security.}  We have two security goals for this protocol.  First, we require that this protocol is a secure instantiation of a one-way sealed sender conversation, just like the protocol above.  This is clear, as the only party whose behavior changes from the protocols in
+\cref{sec:signal-levelonesolution} is the initial receiver.  Simulating their behavior is easy because that user's identity is already leaked by the ideal
+functionality. As such, the proof remains nearly identical to that in
+\cref{sec:signal-proof}.
+
+Second, we require that the service provider has only one chance to identify the initial receiver.  Note that besides the initial messages, all sent messages are only linked to the anonymous identities.  Thus, no information about the users' true identities are leaked by these messages.  This only source of information about these identities comes from the timing of the mailbox's initial opening, so this is the only chance to identify the initial receiver.   
+As described in our simulations, in a reasonably busy network it is difficult to link two events perfectly.  Instead, it requires many epochs of repeated behavior to extract a link.  Therefore, giving the service provider only a single chance to de-anonymize the receiver will most likely (\emph{though not provably}) provide two-sided anonymity.
+To further decrease the chance of a successful attack, the initial receiver can introduce some initial random delay in opening and using a new mailbox.%, making it harder for the service provider to extract this link.
+
+\medskip \noindent
+\textbf{Obscuring the Conversation Flow.} A natural generalization of this approach is to switch mailboxes often throughout a conversation, possibly with {\em each message}.
+%That is, when a user runs the send message subprotocol, they also run the change mailbox protocol at the same time.  
+%This would be an attempt at obscuring the conversation flow from the service provider,
+This may provide further obfuscation, as each mailbox is only used once.  While analyzing {\em how well} this approach would obscure the conversation flow is difficult, as linking multiple messages together requires the service provider to find a timing correlation between the various mailboxes' activities, it is clear it provides no worse anonymity than the above construction.
+%Finally, if opening a mailbox requires anonymous credentials (see next section), this approach might require allowing users to close existing mailboxes in exchange for a new anonymous credential that can be used later.
+

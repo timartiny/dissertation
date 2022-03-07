@@ -1,0 +1,293 @@
+\section{Solutions}\label{sec:signal-solution}
+We now present three protocols that follow the security definition from
+\cref{sec:signal-secdef} and, in particular, prevent the attacks presented in \cref{sec:signal-attack}.  We first outline a {\em one-way} sealed sender conversation in \cref{sec:signal-levelonesolution}, in which the initiator of the conversation remains anonymous.  We prove that our construction meets the definition presented in \cref{sec:signal-apxdefinitions}.   In \cref{sec:signal-leveltwosolution}, we extend this protocol to give better privacy to the receiver using a {\em two-way} sealed sender conversation.  Finally, in \cref{sec:signal-levelthreesolution}, we address denial of service attacks that malicious users could launch against the server. 
+
+\medskip \noindent
+\textbf{Overview of Solutions.} Our key observation is that the attack described in \cref{sec:signal-attack} is only possible because both users in a conversation are sending messages to the other's long-term identity.  Over time, these messages can be correlated, revealing the identities of the users.
+On the other hand, if {\em anonymous} and {\em ephemeral} identities are used instead, then user's true identities can remain hidden.  However, anonymous identities lead to a bootstrapping problem: {\em how do users initiate and authenticate a conversation if they are using fresh, pseudonyms?} 
+
+In a {\em one-way sealed sender conversations}, the identity of one side
+of the conversation is leaked, namely the initial message receiver, in
+order to solve this bootstrapping problem. This closely models the
+situation of a whistle-blower, where the informant wishes to stay
+anonymous, but the reporter receiving the information can be public. At
+a high level, the initiator of the conversation begins by creating a
+fresh, anonymous identity and then sends this identity to a receiver via
+a normal sealed sender message (thus solving the bootstrapping problem).
+The conversation proceeds with the initiator of the conversation sending
+messages to the receiver using sealed sender (one way), and the
+conversation receiver sending replies to the initiator's anonymous
+identity. Importantly, the identity of the initiator is never leaked, as
+no messages exchanged in the conversation contain that person's long-term
+identity.  We prove that out protocol securely realizes the definition
+of sealed sender conversations presented in
+\cref{sec:signal-apxdefinitions}. 
+
+A straightforward extension is to move towards {\em two-way sealed
+sender conversations} where both parties use anonymous identities. This solution is described
+in \cref{sec:signal-leveltwosolution}. When an initiator
+starts a conversation as described above, the receiver
+also creates a new anonymous identity and sends it via sealed sender back to the
+conversation initiator. This protocol offers a single opportunity to
+link the receiver to their new, anonymous identity (by correlating the
+timing of the received message and the registering of a new public key),
+but, as we have shown, network noise makes it difficult to re-identify
+users with only a single event. Even in the unlikely case that
+the conversation receiver is
+linked to their long-term identity, we show that the conversation initiator
+remains anonymous.
+
+Both protocols place the service provider at risk of denial of service
+attacks, and so in \cref{sec:signal-levelthreesolution}, we aim to
+limit the power of users to arbitrarily register anonymous identities.
+Allowing users to create unlimited anonymous identities would lead to
+strain on the service provider if there is no way to differentiate
+between legitimate anonymous identities and malicious ones. To prevent
+these attacks, users are each given a limited number of anonymous
+credentials that they can ``spend'' to register anonymous keys,
+reminiscent of the earliest e-cash systems \cite{C:Chaum82}.  These
+credentials can be validated by the service provider to ensure that a
+legitimate user is requesting an anonymous identity without revealing
+that user's identity. We use blind signatures to implement our anonymous
+credentials.  We evaluate the practicality of this approach in
+\cref{sec:signal-impl} and show that it could be deployed cheaply for
+either one-way or two-way sealed sender conversations.
+
+
+For simplicity, we assume that communicating users have already exchanged delivery tokens.  Any protections derived from these delivery tokens can be added to the following protocols in a straightforward manner.  Additionally, we assume users connect to the service provider via an anonymous channel, e.g., Tor or Orbot.
+
+% that
+% Alice uses a new anonymous identity in her conversation
+% with Bob instead of her own, public identity.
+% One can think of this ephemeral identity as a mailbox that is opened
+% anonymously in a delivery center. Bob's messages back to Alice can
+% then be addressed to this mailbox without revealing Alice's identity.
+
+% Note that only one party in a two-way conversation (Alice, in our story)
+% uses an anonymous mailbox; the other party (Bob) uses his public
+% mailbox. This is a natural extension of the existing sealed sender
+% protocol upon which our solution is based, which reveals the recipient
+% of each message but not its sender. Our solution extends this idea of
+% single-sided privacy from the level of individual messages (which the
+% sealed sender protocol provides) to the level of multiple-message
+% conversations (which our attack demonstrates sealed sender alone does
+% not provide).
+
+% When beginning a new conversation with Bob, Alice first creates a new
+% ephemeral identity, and this ``return address'' is included with her
+% sealed-sender message to Bob. When Bob replies (either with a delivery
+% receipt, read receipt, or an actual response), he sends a sealed-sender
+% message to the anonymous mailbox address that Alice sent him.
+% In this way, even a powerful attacker who can use timing to connect
+% messages and responses will only see that Bob is in a conversation with
+% some anonymous mailbox, without any possibility of learning Alice's
+% identity.
+
+% Like in the sealed sender protocol itself, the main technical challenge
+% in our solution is preventing the abuse that anonymity would otherwise
+% enable; that is, preventing users from registering too many anonymous
+% mailboxes.
+% We limit the number of mailboxes per user, without compromising
+% anonymity, by using anonymous credentials
+% implemented with blind signatures.  Each user is issued a fixed number of anonymous
+% credentials, each of which can be swapped for an active mailbox.  Once
+% that mailbox is no longer needed, it can be closed and the user can be issued a fresh
+% anonymous credential, all without the possibility of linking any user to
+% any anonymous mailbox.
+
+
+\subsection{Preliminaries}
+
+\noindent
+\textbf{Sealed Sender}
+We assume that the service provider implements the sealed sender
+mechanism described in \cref{ssec:signal-signal}.  Specifically, we assume that a client can generate a public/private key
+pair and publish their public key as an address registered with the
+service. If the server permits it through some verification process, the
+server will allow messages to be sent to that public key without a sender.
+
+More formally, we assume that the system has a sealed sender encryption scheme $\sealedsenderencryptionscheme$.  While Signal does not give a proof of security for the scheme it uses, for our constructions we will assume that $\sealedsenderencryptionscheme$ is a signcryption scheme that satisfies ciphertext anonymity \cite{PKC:LibQui04} and adopt the notation presented in \cite{ACISP:WMAS13} for its algorithms\footnote{We note that ciphertext anonymity is actually a stronger primitive than required, as there is no need for receiver anonymity.}. We say a sealed sender encryption scheme $\sealedsenderencryptionscheme$ is a set of three algorithms:
+% $(\sealedsenderencryptiongen, \sealedsenderencryptionenc, \sealedsenderencryptiondec, \sealedsenderencryptionverify)$ defined as follows:
+\begin{itemize}[noitemsep]
+  \item $\sealedsenderencryptiongen(1^\secparam) \rightarrow (\pk, \sk)$ generates a public/private key pair.
+
+  \item $\sealedsenderencryptionenc(m, \sk_s, \pk_r) \rightarrow c$
+  takes in a message $m$, the sender's secret key $\sk_s$ and the
+  receiver's public key $\pk_r$, and outputs a ciphertext $c$
+
+  \item $\sealedsenderencryptionvdec(\sk_r, c) \rightarrow \{
+  (m,\pk_s), \bot \}$ takes in the receiver's private key $\sk_r$ and
+  a ciphertext $c$ and either outputs a message $m$,and the public key of the sender $\pk_s$,
+  or returns the error symbol $\bot$.
+  (Note that this actually constitutes decryption followed by verification
+  in the notation of \cite{ACISP:WMAS13}, returning $\bot$ when either step fails.)
+
+%   \item $\sealedsenderencryptiondec(\sk_r, c) \rightarrow \{
+%   (m,x,\pk_s), \bot \}$ takes in the receiver's private key $\sk_r$ and
+%   a ciphertext $c$ and either outputs a message $m$, some additional
+%   information $x$, and the public key of the sender $\pk_s$, or returns the error symbol $\bot$. 
+% 
+%   \item $\sealedsenderencryptionverify(m,x,\pk_s) \rightarrow \bin$
+%   takes in the output of a decryption and verifies if it is correct.
+\end{itemize}
+Formal security definitions are given in \cite{ACISP:WMAS13}.  In short, the scheme satisfies (1) message indistinguishability, (2) unforgeability, and (3) ciphertext anonymity, meaning the ciphertext reveals nothing about the sender or receiver. 
+
+
+% \paragraph*{Delivery Token.} Additionally, we assume that there is some sealed sender authentication mechanism $\sealedsenderauthscheme = (\sealedsenderauthschemegenerate, \sealedsenderauthschemeauth, \sealedsenderauthschemeverify)$ that allows a sender to prove that they are allowed to send a sealed sender message to a specific receiver.  We require that the output of $\sealedsenderauthschemeauth$ does not reveal the identity of the sender.  This scheme replicates the delivery tokens in Signal (see Section \ref{}).
+
+\input{signal-blindsignatures}
+
+\input{signal-levelonesolution}
+
+\input{signal-leveltwosolution}
+
+\input{signal-levelthreesolution}
+
+\subsection{Blind Signature Performance} % timing, about this implementation (ripping parts out from more complicated protocols)
+\label{sec:signal-impl}
+
+To test the feasibility of using blind signatures, we implemented the
+protocols in \cref{sec:signal-levelthreesolution} for a single client and
+server. This represents the \emph{cryptographic overhead} of applying
+our solution, as the remainder (sending and receiving messages,
+registering keys) are services already provided by Signal.
+%We now test the feasibility of using blind signatures to limit the number of anonymous mailboxes that can be opened by users.  We do this by implementing a server that runs the protocols specified in Section~\ref{sec:levelthreesolution}.  These protocols are the overhead required to run the solutions we have described, as sending and receiving messages and authenticating clients are already implemented.
+
+\begin{table}
+\centering
+  \begin{tabular}{l|ccc}
+      \toprule
+     ~~Network  & ECDSA  & Get Signed  & Open a \\
+    ~Conditions & KeyGen & Mailbox Key & Mailbox \\
+    \midrule
+    End-to-End & 0.049 &    0.061   & 0.039 \\ 
+    User Local & 0.049 &    0.032   & 0.024 \\
+    Server Local & N/A &    0.013   & 0.001 \\
+    \bottomrule
+  \end{tabular}
+        \caption{Timing results (in seconds) for protocols of
+        \cref{sec:signal-levelthreesolution}, using RSA-2048 ciphertexts and ECDSA.
+        %WAN times were taken with a server, running on AWS, and client on the same coast of the US.  Local results are the same operations with the server and client running locally on the same computer.
+        }
+  \label{tbl:signal-timing_results}
+\end{table}
+
+
+The networking for both the client and server are written in
+Python, with the Django web framework \cite{django} on the server.
+Starting with the code provided in \cite{blind_rsa_old_code}, we
+implement an RSA-2048 blind signature \cite{C:Chaum82} library in Java that can be called via RPC. Although RSA ciphertexts are large, they are very fast
+to compute on modern hardware.%  The Python code, both on the client and
+%server side, uses this RPC interface to blind, sign, unblind, and verify
+%signatures.  We use this RPC interface to ensure that the JVM can be
+%initialized before execution and long-term keys can be loaded.
+
+We evaluated our implementation by running the server on an AWS instance
+with 2 Intel Xeon processors and 4 GB of RAM.  The client was running on
+a consumer-grade laptop, with a 2.5 GHz Intel i7 with 16 GB of RAM,
+located in the same region as the AWS server.
+%Our client and server were both located on the same coast of the United States.
+We report the timing results in \cref{tbl:signal-timing_results} for each
+protocol.
+%, divided into three categories.  First, we report the time it takes to generate the ephemeral key material for the sealed sender encryption scheme ({\bf Get Signed Mailbox Key} Step 2), in this case an
+% ECDSA key.  Second, we report how long it takes for the client to blind the public key and interactively get a valid signature ({\bf Get Signed Mailbox Key} Step 3-5).  Finally, we report the time it takes to open a new mailbox, including verifying the signature ({\bf Open a mailbox}).
+To better isolate the overhead from network delay, we also report the
+execution time when server and client are running locally on the same
+machine.
+
+Importantly, ECDSA KeyGen can be run in the background of the client,
+long before the interactive phase of the protocol starts.  For maximum
+security, a user may close an old mailbox and get a new signed key (with the same anonymous connection), and then
+open a new mailbox with each message that they send.  This incurs an
+overhead of less that 100ms, even including network delay.  The communication overhead of running this 
+full protocol is less that 1KB, constituting 3 RSA-2048 ciphertexts and 1 ECDSA public key.
+
+\subsection{Deployment Considerations}
+\label{sec:signal-deployment}
+
+\medskip \noindent
+\textbf{Key Rolling.}\label{ssec:signal-keyrolling}
+It is critical that the server maintain a
+database of ephemeral identities previously registered on the system
+in order to check for re-use of old ephemeral identities.
+% If this list is not properly maintained, a user can reuse old 
+% ephemeral identities after they have been exchanged for a fresh
+% identity in the mailbox closing subroutine.  This would, in effect,
+% give users an unlimited number of valid ephemeral identities, 
+% undermining the intended abuse prevention goal.
+Note that to 
+prevent reuse, this database must be maintained for as long as the
+identities are valid and grows with the number of mailboxes, not the
+number of users.
+
+We suggest that Signal update their mailbox signing key at regular
+intervals, perhaps each day, and leave two or three keys valid for overlapping
+periods of time to avoid interruptions in service.
+Because the validity of a signed
+mailbox key is tied to the signing key, each update allows the server to
+``forget'' all the keys
+that it saw under the old signing keys as they cannot be reused.
+% rolling the valid signing
+% keys purges the validity of all older, signed ephemeral identities.
+% Importantly, this also allows the server to ``forget'' all the keys
+
+% Because Signal is an international service, rolling at a particular
+% time each day may cause logistical problems with certain parts of
+% the globe.
+% For instance, rolling keys during the busiest time of
+% the day may cause increased traffic at incontinent times.u
+% Therefore,
+% we also suggest that signing keys could be valid for overlapping 
+% periods of time, giving users flexibility.  The only added
+% complication is that a fresh ephemeral identity generated when
+% closing a mailbox must be signed with the signing key used to sign
+% the original mailbox identity.
+
+\medskip \noindent
+\textbf{Mailbox Opening.}
+It is important that users perform {\bf Get signed mailbox key} (where Signal
+learns a user's identify) and {\bf Open a mailbox} in an uncorrelated way.
+Otherwise, Signal could link the two and identify the anonymous mailbox.
+We recommend performing {\bf Get signed mailbox key} at regular intervals (e.g.
+the same time each day), but careful consideration must be taken for users
+that are offline during their usual time. Users should not come online and
+perform both operations immediately if sending to a new conversation. To avoid this,
+clients should maintain a small batch of extra signed mailbox keys for new
+conversations.
+%and refresh these at random intervals uncorrelated with their use.
+
+
+\medskip \noindent
+\textbf{Cost Overhead.}
+We analyze the worst case cost of scaling our protocol. We generously assume that 10 million anonymous mailboxes will be opened every day.
+%, and compute the costs associated with this many messages.
+The server's part of opening these mailboxes constitutes calls to 
+\bsverify and \bssign and a database query (to check for repeated identities).
+In our experiments, the
+two blind signature operations, including the Django networking
+interface, took a cumulative .014 seconds.  Using AWS Lambda, supporting 
+10 million messages each day would cost approximately \$10 per month.  
+We estimate that doing 10 million reads and writes a day to a DynamoDB database
+would cost approximately \$20 per month, using AWS's reserved capacity pricing.
+
+Using the key rolling scheme described above, the database contains
+at most the number of messages delivered in a day times the number
+of simultaneously valid keys. At 10 million messages each time with a
+two overlapping valid keys, this means the database would contain at most 20 million
+ephemeral identities.  Assuming  256-bit identity
+values, the entire database would never exceed a few GB of data.
+%AWS charges \$0.25 to store a GB of data each month.
+Therefore, we conservatively estimate that the
+marginal cost of supporting our protocol for 10 million ephemeral identities per day
+would be under \$40 per month.  We note our analysis does not consider the personnel cost associated with
+developing or maintaining this infrastructure. Ideally, this would be
+amortized along with Signal's existing reliability and support infrastructure.
+% and given the relatively simple design change is unlikely to create significant
+% additional burden.
+
+
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: "main"
+%%% End:

@@ -1,0 +1,164 @@
+\section{Background}\label{sec:Signal-background}
+
+% Although many protocols have been suggested for sending end-to-end
+% encrypted messages (see \cref{sec:relwork-msging}), the most commonly
+% used in practice for mobile messaging is the Signal protocol~\cite{Mar13},
+% currently used by both the Signal and WhatsApp applications. 
+
+We now give
+some background on the structure and types of messages in the Signal protocol~\cite{Mar13}, used in both the Signal and WhatsApp applications.
+
+\subsection{Sealed Sender Messages} % what is signal, what is sealed sender
+\label{ssec:signal-signal}
+Although % the protocols used by
+secure end-to-end encrypted messaging %(SEEM)
+applications like Signal protect the
+contents of messages% sent between users
+, they reveal metadata about
+\emph{which} users are communicating to each other. In an attempt to hide this
+metadata, Signal recently released a feature called sealed
+sender~\cite{sealed-sender} that removes the sender from the metadata
+intermediaries can observe.
+
+To send a sealed sender message to Bob, Alice connects to the Signal server and
+sends an encrypted message to Bob anonymously\footnote{As we note in our threat
+model, we do not consider the information leakage from networking.}. Within the
+payload of this encrypted message, Alice includes her own identity, which allows
+Bob to authenticate the message.  Importantly, Signal still learns Bob's
+identity, which is needed in order to actually deliver it. %; without this identity, Signal cannot deliver the message.
+The structure of sealed sender messages are illustrated in \cref{fig:signal-SealedSenderStructure}.
+
+Due to sender anonymity,
+Signal cannot directly rate-limit users to prevent spam or abuse.  Instead,
+Signal derives a 96-bit \emph{delivery token} from a user's profile key, and
+requires senders demonstrate knowledge of a recipients' delivery token to send
+them sealed sender messages.
+% For instance, to send a sealed sender message to
+% Bob, Alice must have knowledge of his delivery token.
+By only sharing this delivery token with his contacts, Bob
+limits the users who can send him sealed
+sender messages, thus reducing the risk of abuse\footnote{There are a number of
+options available to Bob that can allow more fine-grained access control to his
+delivery token.  Bob can opt to receive sealed sender messages from anyone even
+without knowledge of his delivery token, but this is disabled by default.
+Additionally, Bob can regenerate his delivery token and share it only with a
+subset of his contacts to block specific users.}.
+
+\subsection{Types of Messages}
+\label{sec:signal-message-types}
+
+We manually reviewed and instrumented the Signal messenger Android
+4.49.13 source code~\cite{signal-source} in order to understand the types of
+messages Signal sends. In addition to the messages that contain content to be
+delivered to the receiver, there are several event messages that can be sent
+automatically, as discussed below. All of these messages are first padded to the
+next multiple of 160 bytes, then encrypted and sent using sealed sender (if
+enabled), making it difficult for the Signal service to distinguish events from
+normal messages based on their length. %Figure~\ref{fig:SealedSenderStructure}
+%shows the structure of sealed sender messages, and Figure~\ref{fig:message-stages}
+%shows the user interface for each stage of message acknowledment in Signal.
+
+\SealedSenderStructure
+
+\MessageStages
+
+\medskip \noindent
+\textbf{Normal message.}
+A normal text message or multimedia image sent from Alice to Bob is the
+typical message we consider. A short (text) message will be padded to
+160 bytes, and longer messages padded to a multiple of 160 bytes, before
+encryption.
+% could cut?
+%While the application UI displays a stream of messages
+%between Alice and Bob in a single window as a conversation, in the
+%protocol there is no distinction between the first or any subsequent
+%messages in a given conversation.
+
+
+\medskip \noindent
+\textbf{Delivery receipt.} 
+When Bob's device \emph{receives} a normal message, his device will
+automatically send back a delivery receipt to the sender. When Alice receives
+the delivery receipt for her sent message, her device will display a second
+check mark on her sent message to indicate that Bob's device has received the
+message (see \cref{fig:signal-message-stages}). If Bob's device is online when Alice sends her message, the delivery receipt will be sent back immediately. 
+We measured a median time of 1480~milliseconds between sending a message and receiving a delivery receipt from an online device. (See Figure~\ref{fig:signal-delivery-cdf} for CDF of times.)
+These receipts
+{\em cannot be disabled} in Signal.
+\DeliveryTimeCDF
+% 90% of messages received the delivery receipt in less than 1880ms
+
+\medskip \noindent
+\textbf{Read receipt (optional).} 
+Bob's device will (optionally) send a read receipt to the sender when he has \emph{viewed} a normal
+message, triggering a UI update on Alice's device 
+(see \cref{fig:signal-message-stages}). Unlike delivery receipts, Bob can disable read receipts. However, Alice may still send read receipts for messages she receives
+from Bob. If Bob receives a read receipt but has the feature disabled, his user
+interface will not display the notification. %When interacting with the UI, the
+%feature will appear to be disabled for both users if Bob turns it off, although
+%Alice might still be sending read receipts.
+
+\medskip \noindent
+\textbf{Typing notifications (optional).}\label{sssec:signal-typingNotifications}
+Alice's device will (optionally) send a \emph{start typing} event when Alice is entering a
+message, which Bob's device will use to show that Alice is typing. If she does
+not edit the message for 3 seconds, a \emph{stop typing} event will be sent.
+Each sent message is accompanied by a \emph{stop typing} event to clear the
+receiver's typing notification. Like read receipts, typing notifications can be
+disabled such that the user will not send or display received notifications.
+%However, if their peer still has typing notifications enabled, their device will
+%still receive (but ignore) these events.
+
+
+% More intro-y than background-y
+%Signal~\cite{signal} is a popular secure end-to-end encryption smartphone app
+%that uses off-the-record~\cite{otr} communication to protect the contents sent
+%between users. 
+
+\subsection{Threat Model}
+\label{sec:signal-threat}
+% assumptions of attack, we know that a Network
+% inference attack is possible no matter what, assume that messages/receipts are
+% sent through Tor.
+
+We assume that the service provider (e.g. Signal) passively monitors messages
+to determine which pairs of users are communicating.  This models either an insider threat or a service provider compelled to perform surveillance in response to a government request.
+We assume Alice and Bob have already exchanged delivery tokens and they communicate using sealed sender. Once initiated, we
+assume that Alice and Bob will continue to communicate over time.  Finally, we also assume that
+many other users will be communicating concurrently during Alice and Bob's conversation,
+potentially with Alice and/or Bob.  
+%\gsk{is this the
+%goal?  like is the output of adv 1/0 or is it an identity bob}.
+
+The service provider cannot view the contents of the encrypted sealed sender
+messages, but knows the destination user for these messages (e.g. someone sends
+a message to Bob).  We assume that Alice and Bob have verified their respective 
+keys out of band,
+and that the applications/devices they are using are secure.
+Although the service provider publishes the application, they typically
+distribute open-source code with deterministic builds, which we assume prevents
+targeting individual users.
+
+We note that the service provider could infer a sender's identity from network metadata
+such as the IP address used to send a sealed sender message. However, this is a problem
+that could be solved by using a popular VPN or an
+anonymizing proxy such as Tor~\cite{signal-tor, tor_two}. For the purposes of
+this paper, we assume that users who wish to remain anonymous to Signal can use
+such proxies (e.g. Orbot~\cite{guardianproject}) when sending sealed sender messages (and, in our solution,
+when receiving messages to ephemeral mailboxes), and we do not use network
+metadata in our attack.
+
+In terms of impact, we note that a recent study
+suggests as many as 15\% of mobile users already use VPNs every day
+\cite{vpn-usage};
+this prevalence is even higher in east Asia and, presumably, among
+vulnerable user populations.
+%When receiving
+%messages, users are unlikely to benefit from Tor, as they must authenticate to
+%Signal with their
+%identity to receive messages.
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: "main"
+%%% End:

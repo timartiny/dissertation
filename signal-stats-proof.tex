@@ -1,0 +1,32 @@
+\chapter{Proof of \cref{thm:stats}}\label{sec:signal-stats-proof} \OnePageChapter
+
+Consider first an arbitrary non-associate Charlie, with probability
+$r_c$ of appearing in a random or target epoch. We first analyze the
+probability that Alice appears above Charlie in the ranking after $n$
+random and target epochs.
+
+Recall that the attack maintains a ``score'' for each user,
+increasing by 1 each time the user appears in a target epoch, and
+decreasing by 1 each time the user appears in a random epoch.
+Define $2n$ random variables $X_1,\ldots,X_n$ and $Y_1,\ldots,Y_n$,
+corresponding to the signed difference in Alice and Charlie's scores during
+each of the $n$ random epochs ($X_i$'s) and target epochs ($Y_i$'s).
+So each $X_i,Y_i \in \{-1,0,1\}$ and the sum
+$\Xbar{} = \sum_{1\le i\le n}(X_i+Y_i)$ is the difference in Alice
+and Charlie's score at the end of the attack. We wish to know the
+probability that $\Xbar{} > 0$.
+
+By the stated probability assumptions, we know the expected value of
+all of these random variables: $\Ex{X_i} = r_c - r_a$,
+$\Ex{Y_i} = t_a - r_c$, and therefore by linearity of expectation,
+$\Ex{\Xbar} = n(t_a - r_a)$. Crucially, note that this is
+\emph{independent of Charlie's probability $r_c$} because we included
+the same number of random and target epochs.
+
+We can now apply Hoeffding's inequality~\cite{hoeffding} over the sum of these $2n$
+independent, bounded random variables $X_i,Y_i$ to conclude that
+$\Pr[\Xbar \le 0] \le \exp(- n (t_a - r_a)^2 / 4)$.
+
+Noting that this bound does not depend on the particular non-associate
+Charlie in any way, we can apply a simple union bound over all $\le m$
+non-associates to obtain the stated result.

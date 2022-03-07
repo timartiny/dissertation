@@ -1,0 +1,118 @@
+\subsection{One-way Sealed Sender Conversations}\label{sec:signal-levelonesolution}
+
+First, we provide the construction of sealed sender conversations which we build on in this solution and those that follow.
+%
+Recall that a sealed sender conversation reveals the flow of the conversation (including message timing, etc.) and the identity of the initial receiver, but at no point can the service provider identify the initial sender.
+
+The intuition behind our solution is straightforward: when initiating a new conversation, a sender generates an ephemeral, per-conversation key pair.  This key pair is registered with the service provider anonymously%
+% (using some form of anonymizing proxy such as Tor)
+, but otherwise is treated as a normal identity in the system.  Throughout the lifetime of the conversation, this identity key is used instead of the long-term identity of conversation initiator.  As long as the ephemeral public key is never associated with the long-term identity, and never used in any other conversations, the service provider cannot learn anything about the true identity of the user that generated that ephemeral identity.
+
+Generally, the flow of a sealed sender conversation is as follows.  During the setup, each sender $\senders$ with long-term keys $(\pk_s, \sk_s)$  creates entries $(\receiverr, \pk_r, \pk_s)$ for each receiver $\receiverr$ with public key $\pk_r$.  Some user, who we call the initiator, starts the conversation by running the {\bf Initiate Conversation} protocol below where $\senders$ generates and registers an ephemeral identity for a receiver $\receiverr$.  Whenever the receiver comes online (or possibly immediately by receiving a push notification) and receives the appropriate information, they will locally associate the ephemeral key with the initiator for the duration of the conversation.  From this point, both users may send messages using the {\bf Send Message} protocol and receive those messages from the service provider via {\bf Push Message}, over an open, long-term connection. 
+The protocol {\bf Open Receiver Connection} is used to establish a
+channel for such push notifications, either for a user's long-term
+mailbox, or for an ephemeral mailbox created for a single conversation.
+
+Every user must maintain a \emph{conversation table}, to remember where
+messages should be sent in all ongoing conversations. Each table entry
+stored by a user $\senders$ is a tuple
+$(\receiverr, \pk_\beta, \pk_\alpha, \sk_\alpha)$, where $\receiverr$ is the actual
+message recipient, $\pk_\beta$ is the recipient's mailbox (public key) to
+which the message is addressed, and $(\pk_\alpha, \sk_\alpha)$ is the key pair used
+to sign and encrypt the message. Depending on who initiated the
+conversation, one of $\pk_\beta$ or $\pk_\alpha$ will correspond to an
+ephemeral identity $\pk_e$, and the other will correspond to one of the long-term identities
+$\pk_r$ or $\pk_s$.
+
+% Each side of the conversation $\senders$ and $\receiverr$ must maintain a conversation table. $\senders$ stores $(\receiverr, \pk_r,\pk_e,\sk_e)$ where $(\pk_e,\sk_e)$ are ephemeral public and secret keys used for the conversation with $\receiverr$. The receiver $\receiverr$ creates an entry $(\senders, \pk_e, \pk_r,\sk_r)$ that associates the sender with their long-term public key and the ephemeral public key. 
+
+% $$(\texttt{User}, \texttt{User's } \pk, \texttt{My } \pk, \texttt{My } \sk)$$
+
+\medskip \noindent
+\textbf{Initiate One-Way Sealed Conversation to $\receiverr$:}
+\begin{enumerate}
+  \item Initiator $\senders$ does the following:
+  \begin{enumerate}[nosep]
+  \item looks up $\receiverr$'s long-term public key $\pk_r$
+    %and authentication token $\deliverytoken_r$
+    \item generates fresh ephemeral keys $(\pk_e, \sk_e) \leftarrow \sealedsenderencryptionscheme.\sealedsenderencryptiongen(1^\securityparameter)$% and authentication token $\deliverytoken_e \leftarrow \sealedsenderauthscheme.\sealedsenderauthschemegenerate(1^\securityparameter)$.
+    \item encrypts $c \leftarrow \sealedsenderencryptionscheme.\sealedsenderencryptionenc(\texttt{``init''} \| \pk_e, \sk_s, \pk_r)$
+    % \item encrypts $c \leftarrow \sealedsenderencryptionscheme.\sealedsenderencryptionenc(\texttt{``init''} \| \pk_e \| \deliverytoken_e, \sk_s, \pk_r)$
+    % \item generates the authentication message $a \leftarrow \sealedsenderauthscheme.\sealedsenderauthschemeauth(\pk_r, \deliverytoken_r)$
+    \item connects to the service provider anonymously and sends $c \| \pk_e$ for $\pk_r$ 
+    \item appends $(\receiverr, \pk_r, \pk_e, \sk_e)$ to the conversation table
+    % \item record $(\pk_e, \sk_e), \deliverytoken_e$ as a sender identity   
+    \item Registers a new mailbox for the public key $\pk_e$ and uses \textbf{Open Receiver Connection} with keypair public key $\pk_e, \sk_e$ to establish a connection for push notifications.
+  \end{enumerate}
+
+  \item The service provider delivers $c$ (sealed sender) to $P_r$ based on $\pk_r$, either immediately pushing the message or waiting for the receiver to come online.
+
+  \item When the receiver $\receiverr$ receives the message to its long-term mailbox
+    $\pk_r$, it:
+    %When the receiver calls receive message,
+  \begin{enumerate}[nosep]
+    \item decrypts and verifies\\ $(\texttt{``init''} \| \pk_e, x, \pk_s)  \leftarrow
+    \sealedsenderencryptionscheme.\sealedsenderencryptionvdec(\sk_r, c)$
+%     \item verifies
+%   $\sealedsenderencryptionscheme.\sealedsenderencryptionverify(\texttt{``init''} \|
+%   \pk_e, x,\pk_s) =1$
+    \item appends $(\senders, \pk_e,
+  \pk_r, \sk_r)$ to the conversation table
+    \item uses {\bf Send Message} to send a delivery receipt to $\senders$ (which now goes to $\pk_e$ from the conv.\ table)
+  \end{enumerate}
+  % \item When the receiver calls receive message, it decrypts $(\texttt{``init''} \| \pk_e \| \deliverytoken_e, x, \pk_s)  \leftarrow \sealedsenderencryptionscheme.\sealedsenderencryptiondec(\sk_r, c)$ and verifies $\sealedsenderencryptionscheme.\sealedsenderencryptionverify(m \| \pk_e \| \deliverytoken_e, x,\pk_s) =1$.  The receiver then records $(\sender, \pk_e, \deliverytoken_e, \pk_r, \deliverytoken_r)$ and uses {\bf send message} to send an acknowledgment to $\pk_e$ 
+\end{enumerate}
+
+\medskip \noindent
+\textbf{Send Message to $\personx$}
+\begin{enumerate}[noitemsep]
+  \item Sender looks up freshest entry $(\personx, \pk_\beta,
+  \pk_\alpha, \sk_\alpha)$
+  in the conversation table.%
+  % \footnote{Note that one of $\pk_\alpha$ and $(\pk_\beta,\sk_\beta)$ will be ephemeral and the other will be long-term, depending on which party initiated the conversation.}
+
+  \item Sender encrypts $c \leftarrow \sealedsenderencryptionscheme.\sealedsenderencryptionenc(m, \sk_\alpha, \pk_\beta)$
+
+  % \item Sender generates the authentication message required to prove that they are allowed to send to the receiver $a \leftarrow \sealedsenderauthscheme.\sealedsenderauthschemeauth(\pk_r, \deliverytoken_r)$
+
+  % \item Sender sends $a \| c$ to the service provider, anonymously if necessary, to send to $\receiverr$
+  \item Sender sends $c$ for $\pk_\beta$ to the service provider,
+  anonymously if necessary.%, for receiver $\receiverr$.  
+  \item If there is an open connection associated with $\pk_\beta$, the service provider uses \textbf{Push Message} for $c$ over that connection. Otherwise, the service provider sets the message as pending in the mailbox associated with $\pk_\beta$
+  % \item The service provider verifies $\sealedsenderauthscheme.\sealedsenderauthschemeverify(a, \pk_r)=1$, and drops it otherwise.  The service provider sets the message as pending in the mailbox associated with $\pk_r$
+
+\end{enumerate}
+
+\medskip \noindent
+\textbf{Open Receiver Connection for $(\pk_\beta,\sk_\beta)$}
+\begin{enumerate}[noitemsep]
+  %\item Receiver $P_s$ looks up entry $(P_r, \pk_s, \pk_e, \sk_e)$ in the conversation table.
+  \item Receiver connects to the service provider and demonstrates
+  knowledge of key pair $(\pk_\beta,\sk_\beta)$ such that there is a registered mailbox for public key $\pk_\beta$
+  \item The receiver and the server build a long-term connection for message delivery, indexed by $\pk_\beta$
+  \item If there are any pending messages in the mailbox associated with $\pk_\beta,$ use \textbf{Push Message} for those messages.
+    %\item $\pk'_s=\pk_s$
+    %\item $\sealedsenderencryptionscheme.\sealedsenderencryptionverify(m_i,x,\pk_\alpha)=1$
+\end{enumerate}
+
+\medskip \noindent
+\textbf{Push Message $c$ to $\pk_\beta$}
+\begin{enumerate}[noitemsep]
+  %\item Receiver $P_s$ looks up entry $(P_r, \pk_s, \pk_e, \sk_e)$ in the conversation table.
+  \item Service provider looks up an open connection indexed by $\pk_\beta$.  If such a connection exists, the service provider sends $c$ over it
+  \item Receiver decrypts $c$ as $(m,\pk_\alpha) \leftarrow \sealedsenderencryptionscheme.\sealedsenderencryptionvdec(\sk_\beta, c)$ and verifies
+    an entry $(\personx, \pk_\alpha,\allowbreak \pk_\beta, \sk_\beta)$ exists in the conversations table,
+    dropping it otherwise.
+    %\item $\pk'_s=\pk_s$
+    %\item $\sealedsenderencryptionscheme.\sealedsenderencryptionverify(m_i,x,\pk_\alpha)=1$
+\end{enumerate}
+
+
+We prove that this construction securely realizes the definition \cref{fig:signal-definition} in the standalone model in \cref{sec:signal-proof}.  The proof is straightforward: we construct a simulator and show that an adversary corrupting the service provider and any number of clients cannot distinguish between the real protocol and interacting with the ideal functionality.
+
+
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: "main"
+%%% End:

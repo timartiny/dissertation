@@ -1,0 +1,212 @@
+% \clearpage
+
+\chapter{Proof Of Security For One-Way Sealed Sender Conversations} \label{sec:signal-proof} 
+
+We now give a proof that the protocol in \cref{sec:signal-levelonesolution} realizes the ideal functionality in \cref{fig:signal-definition}.  As mentioned, we give this proof in the standalone model with static corruptions.
+
+We define the simulator $\sim$ as follows:
+
+\medskip \noindent
+\textbf{Setup:} At startup, $\sim$ generates long-term key pairs $(\pk_{P_i}, \sk_{P_i})$  for each honest user $P_i \in P_H$.  Next, $\sim$ receives a public key $\pk_{P_j}$ for each corrupt user $P_j \in P_C$ from the adversary.  
+
+$\sim$ initializes an empty table $\mathbb{T}$ with format $$(\convoid, P_s, \pk_{s,\convoid}, \sk_{s,\convoid}, P_r, \pk_{r,\convoid}, \sk_{r,\convoid})$$ where $P_s$ is the identity of the conversation initiator, $(\pk_{s,\convoid}, \sk_{s,\convoid})$ is the keypair used by $P_s$ in conversation $\convoid$, $P_r$ is the initial receiver, and $(\pk_{r,\convoid}, \sk_{r,\convoid})$ is the keypair used by $P_r$ in conversation $\convoid$.  Some elements in these entries may be empty if $\sim$ does not know the value.  We will represent unknown elements with $\cdot$.
+
+$\sim$ also initializes an empty message table $\mathbb{M}$ with format $$(\convoid, \msgid, c)$$
+
+Note that the definition presented in \cref{fig:signal-definition} is in terms for {\em pull notifications}, while the protocol in \cref{sec:signal-levelonesolution} is in terms of {\em push notifications}.  However, the push notification in the protocol, modeled after how Signal actually works, are essentially a sustained pull.  That is, opening a longterm connection is equivalent to having the receiver continuously sending pull requests to the server.  To bridge this gap, the simulator maintains a list of open connections.  At each time step, the simulator iterates through the list of open connections are sends a $\receivemessagealg$ to the ideal functionality of that players part.  Similarly, we expect that honest users will do this if they want push-style notifications. 
+
+\begin{enumerate}
+	\item \textbf{Honest user starts a conversation with an honest user.} When $\sim$ receives the message $(\approvenewconvo, P_r, \convoid)$ from the ideal functionality, samples $(\pk_{s,\convoid}, \sk_{s,\convoid}) \leftarrow \sealedsenderencryptionscheme.\sealedsenderencryptiongen(1^\securityparameter).$  $\sim$ retrieves the longterm information for user $P_r,$ {\em i.e.} $\pk_{P_r}, \sk_{P_r}.$  Add the entry $$(\convoid, \cdot, \pk_{s,\convoid}, \sk_{s,\convoid}, P_r, \pk_{P_r}, \sk_{P_r})$$ to $\mathbb{T}$ and then does the following:
+	\begin{enumerate}
+		\item Encrypt $c \leftarrow \sealedsenderencryptionscheme.\sealedsenderencryptionenc(\texttt{``init''} \| \pk_{s,\convoid}, \allowbreak \sk_{s,\convoid}, \pk_{P_r})$
+		\item Send $c$ to $\serviceprovider$
+	\end{enumerate}
+	If $\sim$ gets $c'$ from $\serviceprovider$ for $P_r$ and $c=c',$ $\sim$ performs the following 
+	\begin{enumerate}
+		\item sends an acknowledgment to $\serviceprovider$ on behalf of $P_r$ for $P_s$
+		\item receives the acknowledgment on behalf of $P_s$
+		\item sends $(\approve)$ to ideal functionality
+	\end{enumerate}
+	Otherwise, $\sim$ sends $(\disapprove)$ to the ideal functionality
+
+	\item \textbf{Honest user starts a conversation with an corrupt user.}  When $\sim$ receives the message $(\approvenewconvocorrupt, P_s, P_r, \convoid)$ from the ideal functionality, samples $(\pk_{s,\convoid}, \sk_{s,\convoid}) \leftarrow \sealedsenderencryptionscheme.\sealedsenderencryptiongen(1^\securityparameter).$  $\sim$ retrieves the longterm information for user $P_r,$ {\em i.e.} $\pk_{P_r}.$  Add the entry $$(\convoid, P_s, \pk_{s,\convoid}, \sk_{s,\convoid}, P_r, \pk_{P_r}, \cdot)$$ to $\mathbb{T}$ and then does the following:
+	\begin{enumerate}
+		\item Encrypt $c \leftarrow \sealedsenderencryptionscheme.\sealedsenderencryptionenc(\texttt{``init''} \| \pk_{s,\convoid}, \allowbreak \sk_{P_s}, \pk_{P_r})$
+		% \item Generate $a \leftarrow \sealedsenderauthscheme.\sealedsenderauthschemegenerate(\pk_{P_r}, \deliverytoken_r)$
+		\item Send $c$ to $\serviceprovider$
+	\end{enumerate}
+	If $\sim$ gets an acknowledgment from $\serviceprovider$ for $P_s,$ $\sim$ sends $(\approve)$ to ideal functionality.  Otherwise, $\sim$ sends $(\disapprove)$ to the ideal functionality.
+
+
+	\item \textbf{Corrupt user starts a conversation with an honest user.} When $\sim$ receives a message $c \| \pk_e$ from $\serviceprovider$ for an honest player $P_h,$ $\sim$ retrieves the longterm information for that player, {\em i.e.} $\pk_{P_s}, \sk_{P_s}.$  $\sim$ then does the following:
+	\begin{enumerate}
+		\item Decrypt and verify $(\texttt{``init''} \| \pk_e, x, \pk_c)  \leftarrow \sealedsenderencryptionscheme.\sealedsenderencryptionvdec(\sk_{P_h}, c)$
+                %and verifies $\sealedsenderencryptionscheme.\sealedsenderencryptionverify(m \| \pk_e, x,\pk_c) =1.$
+                On failure, $\sim$ halts.
+		\item Find a player $P_c$ with longterm public key $\pk_{P_c}=\pk_c$.  If no such player exists, $\sim$ halts.
+		\item Send $(\startconvo, P_h)$ to the ideal functionality on behalf of $P_c$ and receive \\$(\approvenewconvocorrupt, P_c, P_h, \convoid)$ in return.  $\sim$ responds with $(\approve).$  $\sim$ drops the resulting notification.
+		\item Generate an acknowledgment message using $\pk_e$ and $\sk_h$ and send it to $\serviceprovider$ on behalf of $P_h$ for the identity $\pk_e$
+	\end{enumerate}
+	Finally, $\sim$ adds the entry $$(\convoid, P_h, \pk_{P_h}, \sk_{P_h}, P_c, \pk_e, \cdot)$$ to $\mathbb{T}$
+
+
+	\item \textbf{Anonymous honest user sends a message to another honest user.} When $\sim$ receives the message $(\notifyanonymoussendmessage, \convoid, \msgid, | m |)$ from the ideal functionality, $\sim$ looks up the entry $$(\convoid, \cdot, \pk_{s,\convoid}, \sk_{s,\convoid}, P_r, \pk_{r,\convoid}, \sk_{r,\convoid})$$ in $\mathbb{T}$ and performs the following:
+	\begin{enumerate}
+		\item Samples $m_0 \sample \{0,1\}^{|m|}$
+		\item Computes $c \leftarrow \sealedsenderencryptionscheme.\sealedsenderencryptionenc(m_0, \sk_{r,\convoid}, \pk_{s,\convoid})$ 
+		% \item Generates $a \leftarrow \sealedsenderauthscheme.\sealedsenderauthschemegenerate(\pk_{s,\convoid}, \deliverytoken_{s,\convoid})$
+		\item Sends $c$ to the $\serviceprovider$ for $\pk_{s,\convoid}$ from $\pk_{r,\convoid}$
+		\item Records the entry $(\convoid, \msgid, c)$ in $\mathbb{M}$
+	\end{enumerate}
+
+	\item \textbf{Non-anonymous honest user sends a message to another honest user.} When $\sim$ receives the message $(\notifysendmessage, \convoid, \msgid, P_r, | m |)$ from the ideal functionality, $\sim$ looks up the entry $$(\convoid, \cdot, \pk_{s,\convoid}, \sk_{s,\convoid}, P_r, \pk_{r,\convoid}, \sk_{r,\convoid})$$ in $\mathbb{T}$ and performs the following:
+	\begin{enumerate}
+		\item Samples $m_0 \sample \{0,1\}^{|m|}$
+		\item Computes $c \leftarrow \sealedsenderencryptionscheme.\sealedsenderencryptionenc(m_0, \sk_{s,\convoid}, \pk_{r,\convoid})$ 
+		% \item Generates $a \leftarrow \sealedsenderauthscheme.\sealedsenderauthschemegenerate(\pk_{r,\convoid}, \deliverytoken_{r,\convoid})$
+		\item Sends $c$ to the $\serviceprovider$ for $\pk_{r,\convoid}$ from $\pk_{s,\convoid}$
+		\item Records the entry $(\convoid, \msgid, c)$ in $\mathbb{M}$
+	\end{enumerate}
+
+
+	\item \textbf{Honest user sends a message to a corrupt user.} When $\sim$ receives the message $(\notifysendmessagecorrupt, \convoid, \msgid, m, P_h, P_c)$ from the ideal functionality, $\sim$ looks up the entry 
+	$$(\convoid, P_h, \pk_{h,\convoid}, \sk_{h,\convoid}, P_c, \pk_{c,\convoid}, \cdot)$$ in $\mathbb{T}$ and performs the following:
+	\begin{enumerate}
+		\item Computes $c \leftarrow \sealedsenderencryptionscheme.\sealedsenderencryptionenc(m, \sk_{h,\convoid}, \pk_{c,\convoid})$ 
+		% \item Generates $a \leftarrow \sealedsenderauthscheme.\sealedsenderauthschemegenerate(\pk_{c,\convoid}, \deliverytoken_{c,\convoid})$
+		\item Sends $c$ to the $\serviceprovider$ for $\pk_{c,\convoid}$ from $\pk_{h,\convoid}$
+		\item Records the entry $(\convoid, \msgid, c)$ in $\mathbb{M}$
+
+	\end{enumerate}
+
+% \begin{figure*}[ht]
+%   \centering
+%   \scriptsize
+%   \begin{tabular}{l|l|l}
+%   \toprule
+%   {\bf Notation} & {\bf Type} & {\bf Meaning} \\
+%   \midrule
+%   $P_s$ & User & Sender/Initiator identity \\
+%   $P_r$ & User & Receiver identity \\
+%   % $(\pksign,\sksign)$ & Keypair for $\bsscheme$ & Service provider keypair for signing anonymous credentials \\
+%   % $\sigma$ & Unblinded signature for $\bsscheme$ & Signature over an ephemeral public key \\
+%   $(\pk_s, \sk_s)$  & Keypair for $\sealedsenderencryptionscheme$ & Sender/Initiator longterm, non-anonymous key pair \\
+%     $(\pk_r, \sk_r)$  & Keypair for $\sealedsenderencryptionscheme$ & Receiver longterm, non-anonymous key pair \\
+%     $(\pk_{e}, \sk_{e})$  & Keypair for $\sealedsenderencryptionscheme$ & Ephemeral, anonymous  key pair \\
+%   $(\pk_{es}, \sk_{es})$  & Keypair for $\sealedsenderencryptionscheme$ & Sender/Initiator ephemeral, anonymous  key pair \\
+%   $(\pk_{er}, \sk_{er})$  & Keypair for $\sealedsenderencryptionscheme$ & Receiver ephemeral, anonymous key pair \\
+%   % $\deliverytoken_r$  &  Delivery token for $\sealedsenderauthscheme$ & Receiver longterm, non-anonymous delivery token \\
+%   % $\deliverytoken_{er}$  &  Delivery token for $\sealedsenderauthscheme$ & Receiver ephemeral, anonymous delivery token \\
+%   % $\deliverytoken_{es}$  &  Delivery token for $\sealedsenderauthscheme$ & Sender ephemeral, anonymous delivery token 
+%   \end{tabular}
+%   \caption{Notation for two-way sealed sender protocols}
+% \end{figure*}
+	% \item \textbf{Corrupt user sends a message.} (Nothing seen by Sim)
+
+	\item \textbf{Anonymous honest user receives a message from an honest user.} When $\sim$ receives a set of messages { \small $$ \left\{(\approvesendmessageanonymous, \convoid, \msgid_i, |m_i|)\right\}_{i\in[k]}$$} from the ideal functionality, $\sim$ looks up $$(\convoid, \cdot, \pk_{s,\convoid}, \sk_{s,\convoid}, P_r, \pk_{r,\convoid}, \sk_{r,\convoid})$$ in $\mathbb{T}.$ Additionally, for each message, $\sim$ looks for an entry $(\convoid, \msgid_i, c_i)$ in $\mathbb{M}.$  The ideal functionality authenticates to $\serviceprovider$ with the identity $\pk_{s,\convoid}$ and receives messages $\{a'_j \| c'_j\}_{j\in[k']}$ in return. $\sim$ does the following:
+
+	\begin{enumerate}
+		\item For each message $(\approvesendmessageanonymous, \allowbreak \convoid, \msgid_i, |m_i|)$ and associated entry $(\convoid, \msgid_i, a_i, c_i)$, if $\serviceprovider$ sent a message $a'_j \| c'_j$ such that $a'_j=a_i$ and $c'_j=c_i$, sends $(\approve, \msgid).$ If no such $a'_j \| c'_j$ exists, $\sim$ sends $(\approve, \msgid).$
+		\item For each message $a'_j \| c'_j,$ if there does not exist and entry $(\convoid, \msgid, a'_j, c'_j)$ for some value of $\msgid,$ $\sim$ decrypts $(m_j,\pk_j) \leftarrow \sealedsenderencryptionscheme.\sealedsenderencryptionvdec(\sk_{s,\convoid}, c_i)$.
+                If
+                %$\sealedsenderencryptionscheme.\sealedsenderencryptionverify(m_j,x,\pk_j)=1$ and
+                $\pk_j=\pk_{r,\convoid},$ the simulator aborts with an error.
+	\end{enumerate} 
+
+	\item \textbf{Non-anonymous Honest user receives a message from an honest user.}  When $\sim$ receives the set of messages { \small $$\left\{(\approvesendmessage, \convoid, \msgid_i, |m|, P_r)\right\}_{i\in[k]}$$ } from the ideal functionality, $\sim$ looks up $$(\convoid, \cdot, \pk_{s,\convoid}, \sk_{s,\convoid}, P_r, \pk_{r,\convoid}, \sk_{r,\convoid})$$ in $\mathbb{T}.$ Additionally, for each message, $\sim$ looks for an entry $(\convoid, \msgid_i, c_i)$ in $\mathbb{M}.$  The ideal functionality authenticates to $\serviceprovider$ with the identity $\pk_{r,\convoid}$ and receives messages $\{c'_j\}_{j\in[k']}$ in return. $\sim$ does the following:
+
+	\begin{enumerate}
+		\item For each message $(\approvesendmessage, \convoid, \msgid_i, \allowbreak |m_i|, P_r)$ and associated entry $(\convoid, \msgid_i, c_i)$, if $\serviceprovider$ sent a message $c'_j$ such that $c'_j=c_i$, sends $(\approve, \msgid).$ If no such $c'_j$ exists, $\sim$ sends $(\approve, \msgid).$
+		\item For each message $c'_j,$ if there does not exist and entry $(\convoid, \msgid, c'_j)$ for some value of $\msgid,$ $\sim$ decrypts $(m_j,\pk_j) \leftarrow \sealedsenderencryptionscheme.\sealedsenderencryptionvdec(\sk_{r,\convoid}, c_i)$.  If
+                %$\sealedsenderencryptionscheme.\sealedsenderencryptionverify(m_j,x,\pk_j)=1$ and
+                $\pk_j=\pk_{s,\convoid},$ the simulator aborts with an error.
+	\end{enumerate} 
+
+	\item \textbf{Honest user receives a message from a corrupt user.} When $\sim$ receives the message $(\injectcorruptmessagesalg, \convoid, P_s, P_r)$ from the ideal functionality, it looks up $$(\convoid, P_h, \pk_{h,\convoid}, \sk_{h,\convoid}, P_c, \pk_{c,\convoid}, \cdot)$$ in $\mathbb{T}.$ $\sim$ authenticates to $\serviceprovider$ with $\pk_{h,\convoid}$ and gets a set of messages $\{c_i\}_{i\in[k]}$ from $\serviceprovider$. For each $c_i$ $\sim$ does the following:
+	\begin{enumerate}
+		\item decrypts $(m_i,\pk_i) \leftarrow \sealedsenderencryptionscheme.\sealedsenderencryptionvdec(\sk_{h,\convoid}, c_i)$. If it fails, the message is dropped.
+		%\item verifies $\pk_i=\pk_{c,\convoid}$ and $\sealedsenderencryptionscheme.\sealedsenderencryptionverify(m_i,x,\pk_i)=1.$  If it does not, the message is dropped
+		\item send the tuple $(\convoid, P_c, P_h, m_i)$ to the ideal functionality
+		% XXX TODO FIXME \item \gsk{is there some error case im missing where we need to abort?}
+	\end{enumerate} 
+
+\end{enumerate}
+
+
+
+
+% 	\bigskip
+
+% 	\item When $\sim$ receives a message $(a \| c)$ from the adversary bound for an honest user $P_r$, $\sim$ decrypts $c$. If $c$ decrypts and reveals that it is from an honest party, $\sim$ aborts with an error.  It then does the following
+% 	\begin{enumerate}
+% 		\item Decrypt $m \| \pk_e \| \deliverytoken_e \leftarrow \sealedsenderencryptionscheme.\sealedsenderencryptiondec(\sk_{P_r}, c)$
+
+% 		\item $\sim$ sends $(\startconvo, P_r)$ to the ideal functionality.
+
+% 		\item When it receives $(\approvenewconvo, P_r, \convoid)$ sent to the service provider, $\sim$ responds with $(\approve)$ on its behalf.  
+
+% 		\item Then, when it receives $(\newconvo, P_s, P_r, \convoid),$ it sends \gsk{an ack} to service provider bound for $\pk_e$
+
+% 		\item \gsk{Create an entry between $\convoid$ and $\pk_e$}
+
+% 		% \item If $c$ decrypts as $m \leftarrow \sealedsenderencryptionscheme.\sealedsenderencryptiondec(\sk_{P_r}, c)$ \gsk{and it is actually from a corrupt party}
+
+% 	\end{enumerate}
+
+% 	\item When $\sim$ receives a message $(a \| c)$ from the adversary bound for an ephemeral public key $\pk_e,$ $\sim$ looks up the identity of 
+
+% 	$\sim$ decrypts $c$.  If $c$ decrypts and reveals that it is from an honest party, $\sim$ aborts with an error.  It then does the following
+% 	\begin{enumerate}
+% 		\item Decrypt $m \leftarrow \sealedsenderencryptionscheme.\sealedsenderencryptiondec(\sk_{P_r}, c)$ \gsk{and extract the sender identity}
+
+% 		\item Look up $\convoid$.  $\sim$ sends $(\sendmessagealg, \convoid, m)$ to the ideal functionality 
+
+% 		\item 
+
+% 	\end{enumerate}
+
+
+% \end{enumerate}
+
+
+% \begin{enumerate}
+
+% 	\item When $\sim$ receives the message $(\approvenewconvo, P_r, \convoid)$ from the ideal functionality, $\sim$ computes $(\pk_e, \sk_e) \leftarrow \sealedsenderencryptionscheme.\sealedsenderencryptiongen(1^\securityparameter)$ and $\deliverytoken_e \leftarrow \sealedsenderauthscheme.\sealedsenderauthschemegenerate(1^\securityparameter)$.  It then performs one of the following two operations, depending if $P_r$ is honest or corrupt:
+% 	\begin{enumerate}
+% 		\item If $P_r$ is honest, $\sim$ computes 
+% 		\item If $P_r$ is corrupt, $\sim$ computes 
+% 	\end{enumerate}
+
+% 	\item When $\sim$ receives the message $(\notifysendmessage, \convoid, m, P_r)$ from the ideal functionality, 
+% 	\begin{enumerate}
+% 		\item Find the entry $(\convoid, pk_\convoid, sk_\convoid)$ in $\keytable$.  \gsk{might for for their normal key?}
+% 		\item Encrypt $m$ as $c \leftarrow \Pi_{\mathsf{SealedSender}}.\mathsf{Enc}(pk_\convoid, m)$
+% 		\item Send $c$ to the $\serviceprovider$ with the destination mailbox $\mbid$. \gsk{or just $P_r$}
+% 		\item If the $\serviceprovider$ sends \gsk{a delivery receipt}  back to the simulator $\simulator$ sends $(\approve)$ to the ideal functionality, and sends $(\disapprove)$ otherwise
+% 	\end{enumerate}
+
+
+% 	\item When $\sim$ receives the message $(\notifysendmessage, \convoid, \cdot, |m|)$ from the ideal functionality, 
+% 	\begin{enumerate}
+% 		\item Find the entry $(\convoid, pk_\convoid, sk_\convoid)$ in $\keytable$. 
+% 		\item Sample a random message $m_0 \leftarrow \{0,1\}^{|m|}$
+% 		\item Encrypt it as $c \leftarrow \Pi_{\mathsf{SealedSender}}.\mathsf{Enc}(pk_\convoid, m_0)$
+% 		\item Send $c$ to the $\serviceprovider$ with the destination mailbox $\mbid$.
+% 		\item If the $\serviceprovider$ sends $c$ back to the simulator, bound for the mailbox $\mbid$, $\simulator$ sends $(\approve)$ to the ideal functionality, and sends $(\disapprove)$ otherwise
+% 	\end{enumerate}
+
+% 	\item When $\sim$ receives the message $(\approvesendmessage, \convoid, P_r, |m|, P_r)$ from the ideal functionality, 
+% 	\begin{enumerate}
+% 		\item Sample a random message $m_0 \leftarrow \{0,1\}^{|m|}$
+% 		\item Encrypt it as $c \leftarrow \Pi_{\mathsf{SealedSender}}.\mathsf{Enc}(pk_{P_r}, m_0)$
+% 		\item Send $c$ to the $\serviceprovider$ with the destination mailbox $\mbid_{P_r}$.
+% 		\item If the $\serviceprovider$ sends $c$ back to the simulator, bound for the mailbox $\mbid$, $\simulator$ sends $(\approve)$ to the ideal functionality, and sends $(\disapprove)$ otherwise
+% 	\end{enumerate}
+
+% 	% Stuff for the users
+% 	\item When $\sim$ receives a ciphertext $c$ to deliver to an honest receiver $P_r$, decrypt the message, recover the $\convoid$ from $\keytable$, and send $(\sendmessagealg, P_r, \convoid, m)$ to the ideal functionality.  Upon receiving an $\approvesendmessage$ or $\approvesendmessageanonymous$ from the ideal functionality, $\sim$ sends $(\approve)$, generates a delivery receipt and sends it to the $\serviceprovider$.
+
+% 	% Dont need to worry about receive message, because that would be for 
+% \end{enumerate}
+
+Although the simulator is quite involved, the security argument is quite straight forward hybrid argument, starting with the real experiment $\hybrid{0}$.  In $\hybrid{1},$ conversation opening messages between honest parties take the ephemeral secret key instead of the sender's longterm secret key.  Due to the ciphertext anonymity of $\sealedsenderencryptionscheme,$ the distance between $\hybrid{0}$ and $\hybrid{1}$ is negligible.  In $\hybrid{2},$ the plaintext contents of messages between honest users are replaced with random messages of the same length.  Due to the security of $\sealedsenderencryptionscheme,$ the distance between $\hybrid{1}$ and $\hybrid{2}$ is negligible.  In $\hybrid{3},$ if the service provider delivers a message on behalf of an anonymous honest user that the honest user did not send, the experiment aborts.  Due to the authenticity property of $\sealedsenderencryptionscheme,$ the distance between $\hybrid{2}$ and $\hybrid{3}$ is negligible.  In $\hybrid{4},$ if the service provider delivers a message on behalf of a non-anonymous honest user that the honest user did not send, the experiment aborts.  Due to the authenticity property of $\sealedsenderencryptionscheme,$ the distance between $\hybrid{3}$ and $\hybrid{4}$ is negligible.  Finally, in $\hybrid{5}$ keys are generated randomly by the simulator instead of the honest parties.  Because the keys are sampled at random, the distributions of $\hybrid{4}$ and $\hybrid{5}$ are the same.  $\hybrid{5}$ and the simulator above are distributed identically, so the proof is done.

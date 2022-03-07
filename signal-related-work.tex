@@ -1,0 +1,64 @@
+\section{Related Work}\label{sec:signal-related_work}
+
+\noindent
+\textbf{Attacks on mobile messaging.}
+Mobile messaging services have been hugely popular for decades, but the
+SMS protocol was designed primarily for efficiency and not with
+privacy in mind \cite{smsbook}. Usability studies have shown that many
+users want or even assume that their text messages are private
+\cite{HakCha05}, which has made SMS a ``Goldmine to exploit'' for state
+surveillance \cite{Ball14,Fif19}. Even encrypted alternatives to SMS are
+still targeted by hackers and state-level surveillance tools, as seen
+for example by the NSO group's Pegasus spyware, which was used to
+target the text messages of journalists and politicians in multiple
+countries \cite{MSMRD18}.
+
+\medskip\noindent
+\textbf{Statistical disclosure attacks.}
+SDAs were first proposed as an attack on mix networks by \cite{SDA}, and
+later strengthened to cover more realistic scenarios with fewer or
+different assumptions \cite{SDA-MD05,reverse-SDA,two-sided-SDA}.
+More recent variants consider the entire network, and attempt to
+learn as much as possible about all sender-receiver correlations over a
+large number of observations \cite{vida-SDA,LSDA,mix-limits}.
+See \cite{meet-sdas} for a nice overview and comparison of many existing
+results.
+
+\medskip \noindent
+\textbf{Private messaging.}\label{sec:signal-relwork-msging}
+Perhaps in response to these highly-publicized attacks, third-party
+applications which provide end-to-end encrypted messaging, such as
+WhatsApp (since 2016), Telegram, and Signal, are rapidly gaining in
+popularity \cite{Lab18}. A good overview for the interested reader
+would be the  SoK paper of Unger et.\ al.\ from 2015 \cite{U+15}.
+
+The first cryptographically sound, scalable system for end-to-end
+encrypted messaging is the OTR protocol from 2004~\cite{BGB04}, which had
+significant influence on the popular systems used today~\cite{Mar13,F+16,C+17}.
+
+%In the meantime, many more advanced cryptographic protocols have been
+%investigated in the literature to provide improved functionality,
+%security, and privacy \cite{CF10,HLZZ15,CBM15,KLDF16,SVH18,CDAGM19}.
+%A good place to begin for the interested reader
+
+% Could cut this if needed?
+%\subsection{Anonymous messaging}
+Since OTR, significant research has investigated how to remove or hide metadata
+to provide anonymous chat applications.  Indeed, similar problems have been noted in mix-nets \cite{leibowitz2019no}. Many such as
+Ricochet~\cite{ricochet} rely on Tor~\cite{tor_two}.  Other techniques for obscuring metadata are injecting noise, like
+Pond~\cite{pond} and Stadium~\cite{tyagi2017stadium}, or decentralization \cite{kwon2017atom}.  Many of these solutions require
+sharing cryptographic identities out-of-band, rather than build off human-friendly
+or already known identities.
+
+DC-net based messengers like Dissent~\cite{CF10} or Verdict~\cite{verdict} have also been proposed, but suffer
+problems in scaling to the number of users seen on popular messaging
+applications~\cite{U+15,HLZZ15}. Others such as
+Riposte~\cite{CBM15} have made use of private information
+retrieval to achieve anonymity, but this is also expensive in practice.
+We focus on sealed sender in this paper, as it is the most widely-deployed
+in practice attempt to provide sender anonymity in secure messaging.
+
+% \textbf{Blind Signatures}
+% Blind signatures were first introduced by David Chaum in 1982 \cite{C:Chaum82}.  The blind signatures we use in this work are from Chaum and based on RSA.  To blind a message $m$, the client generates a random value $r$ computes $r^e H(m) \mod N$ where $e$ is the server's public exponent.  Signing is computed as $(r^e H(m))^d \mod N$, where $d$ is the server's private key.  The result is $r H(m)^d \mod N$, as $ed=1 \mod N$.  The client can unblind this value by multiplying $r^{-1}$.  The result is a valid RSA signature on $m$.
+
+% Significant research has been devoted to blind signatures since this initial construction. Blind signatures have been proposed based on the discreet log problem \cite{EC:CamPivSta94} and lattices \cite{AC:Ruckert10}.  Versions of blind signatures that support linkage have also been studied \cite{EC:StaPivCam95}.  Most recently, several works have proposed blind signature schemes that support efficient zero-knowledge proofs \cite{SCN:CamLys02, RSA:PoiSan16, RSA:PoiSan18}.

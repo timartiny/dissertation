@@ -1,0 +1,139 @@
+\section{Discussion}
+\label{sec:signal-discussion}
+
+\subsection{Other solutions}\label{sec:signal-othersolutions} % list of other solutions, why they fail to live up to ours
+In this section, we consider alternative, \emph{minor
+changes} to the existing sealed sender protocol and evaluate their effectiveness.
+
+% While our solution presented in \cref{sec:solution} is
+% designed for practicality, there may be alternative ``lightweight'' ways to
+% provide anonymity between users.
+
+\medskip \noindent
+\textbf{Random delays.}
+Users could send delivery or read receipts after a
+random delay, making it harder for attackers to correlate messages.
+This forces an attacker to increase the \emph{epoch duration} to
+perform the same attack. We analyze the effect of varying epoch duration in
+\cref{fig:signal-combinedfigure}, and find that even
+with hour-long epochs---likely rendering delivery receipts useless---users could
+still be identified within 60 messages.
+We conclude that injecting random delays is an ineffective way to achieve anonymity.
+
+
+\medskip \noindent
+\textbf{Cover traffic.}
+Users could send random sealed-sender messages that are transparently
+ignored by the recipient in order to cover for the true pattern of ongoing
+conversations. Based on our experiments, we again see that cover traffic slows
+down our attack, but at a linear rate with the amount of extra traffic: even
+with 10x extra messages, the anonymity set of potential senders to Bob after 100
+messages is under 1000 users. This
+mitigation strategy has obvious costs for the service provider, without
+significant benefit to user anonymity.
+
+\medskip \noindent
+\textbf{Disable automatic receipts.}
+While Signal users can disable read receipts and typing notifications,
+they currently cannot turn off delivery receipts. Adding an option for this would
+give users the choice to greatly mitigate this attack. We note disabling would
+have to be mutual: Alice turning off delivery receipts should also prevent Bob
+from sending them, different from how Signal currently disables read receipts.
+We also note users could potentially still be linked purely by their messages
+eventually, making this only a partial mitigation.
+
+
+
+
+%Based on our previous results, we can see that adding extra random cover
+%traffic would slow down our attack, but at a rate that scales linearly with
+%the amount of extra traffic needed. For instance,
+%even with only 10\% of messages generating responses to Alice (i.e. roughly a 10x overhead in
+%extra messages), the anonymity set of potential senders to Bob after 100 messages is
+%below 1000 users. This mitigation strategy has obvious costs for the service provider,
+%which would need to handle a large number of extra messages
+%for the same-size user base. 
+
+%\dsr{Important: need to add more concrete numbers here about
+%percentages. It would be good to add a statement like, ``from the
+%previous section, we showed that the number of messages needed to
+%identify Alice scales linearly with the amount of extra random traffic.
+%Even if only 10\% of messages are responded to, Alice can still be
+%identified after X messages.}
+
+
+\subsection{Drawbacks and Likelihood of Adoption}
+% why won't signal use this, potential steps to help adoption.
+
+We believe that the solution we have proposed in \cref{sec:signal-solution}
+is both practical and cost-effective.  However, there are a few drawbacks.
+Most importantly, it adds complexity to the system, and complexity always increases the
+likelihood of error and vulnerability.  In particular, the key rolling scheme
+we suggest in \cref{ssec:signal-keyrolling} requires increased complexity in
+the back-end key management system.  While the compromise of these keys would
+not leak message content, it could allow for a cheap resource denial attack on
+Signal.
+
+A second important drawback of our solution is the assumption that a malicious
+service provider cannot use network information to identify users. As mentioned,
+using Tor~\cite{tor_two,guardianproject} would address this, but only if enough
+users did so to increase the anonymity set.
+
+\if0
+A second important drawback of our solution is the simplifying assumption that
+a malicious service provider cannot use network information to identify users.
+In practice, removing this attack vector would require the use of slow
+networking primitives like Tor~\cite{tor_two}.  Routing this much traffic through Tor might
+have a impact on the speed of the network, but might also provide additional cover 
+traffic to increase the anonymity set of Tor users. Users can also choose to
+selectively use Tor on their own (e.g. with Orbot~\cite{guardianproject}, an Android Tor app that
+routes the whole phone through Tor).
+\fi
+
+
+Finally, our ephemeral identities may increase complexity for users that use
+Signal on multiple devices. Signal would need to securely share or deterministically
+generate these keys with other devices in a privacy-preserving way.
+
+\if0
+Finally, using ephemeral identities could cause synchronization issues for users
+that use Signal on multiple devices.  We have suggested that the keypairs associated
+with the identities should be generated locally by a single device.  This key 
+pair would have to be rapidly and securely shared among multiple devices. 
+\fi
+
+Given the limited scope and impact of these drawbacks, we believe that is
+reasonable to believe that Signal or other secure messengers could potentially
+adopt our solution. %\gsk{do we need more here?}
+
+
+\subsection{Group messaging}
+\label{sec:signal-group}
+
+%\dsr{Previous subsection title was ``Multiple messages'', but I wasn't
+%sure what that was about so I wrote about group messaging instead. If
+%``Multiple messages'' was supposed to mean something else, please add
+%it!}
+
+The OTR and Signal protocols were first designed for pairwise
+communication, and we have focused on such conversations in this work.
+However, group messaging is an important use case for private messaging
+services, and has recently shown to be vulnerable to different kinds of
+attacks~\cite{RMS18,CCGMM18,SH19}.
+
+An interesting direction for future work would be to extend our attacks
+to this setting. It is clear that received receipts and read receipts
+do not work the same way in groups as they do for two-way conversations.
+On the other hand, group messages have additional \emph{group management
+messages} which are automatically triggered, for example, when a new
+member attempts to join the group. It would be interesting to understand
+if, for example, our attack could exploit these message to de-anonymize
+\emph{all} members of a given group chat.
+
+Fortunately, it does seem that our main solution proposed in
+\cref{sec:signal-solution} would be applicable to the group chat setting: all
+members of the group chat would create new, anonymous mailboxes used
+only for that particular group. However, this would still leave the
+difficulty of the initial configuration and key management, which would
+be more complicated than that two-party setting. We consider this to be
+important and useful potential future work.

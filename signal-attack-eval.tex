@@ -1,0 +1,528 @@
+\section{Attack Evaluation}\label{sec:signal-attack-eval}
+In this section, we evaluate our attacks from \cref{sec:signal-attack}
+first from a theoretical perspective, and second using a custom simulation.
+
+While our attack is a variant of existing statistical disclosure attacks
+(SDAs) in the literature,
+the setting is slightly different, and our goals are more modest,
+seeking only to de-anonymize the contacts of a single target user. 
+
+\if0
+As a
+consequence, we can rely on fewer regularity assumptions on other users'
+behavior, and discover Bob's contacts with one or two orders of
+magnitude fewer observations than comparable SDAs.
+\todo{Check 1000s here, or remove this}
+This is important for
+our setting of anonymous instant messaging, where we might expect only
+a few dozen back-and-forth messages in a single conversation, compared
+with thousands in a typical network connection.
+\fi
+\combinedfigures
+
+
+\subsection{Theoretical analysis of attack success}
+\label{sec:signal-attacktheory}
+
+Here we provide statistical bounds to estimate the number of epochs
+needed for our attack to successfully de-anonymize one participant in a
+conversation. As before, say Bob is the target of the attack, and we
+wish to find which other users are communicating with Bob.
+
+Roughly speaking, we demonstrate that (1) all users in conversations with Bob
+can be identified provided he is not in too many other simultaneous
+conversations with other users, and (2) the number of epochs needed for
+this de-anonymization depends logarithmically on the total number of
+users. These results hold under some regularity assumptions on
+communication patterns, which are most sensible for short periods of
+back-and-forth messaging.
+
+\medskip \noindent
+\textbf{Statistical Model.} Our statistical analysis relies on the following assumptions:
+\begin{enumerate}[nosep]
+  \item The probability of receiving a message during any epoch is
+    independent of receiving a message during any other epoch.
+  \item Each user $u$ (both associates and non-associates) has a fixed
+    probability $r_u$ of receiving a message during a random epoch.
+  \item Any \emph{associate} $u$ has a fixed probability $t_u$ of
+    receiving a message during a target epoch, where $t_u > r_u$.
+  \item Every \emph{non-associate} $u$ has the same probability of
+    receiving a message during a target or random epoch, i.e., $t_u = r_u$.
+\end{enumerate}
+
+The last assumption states that the communications of non-associates is
+not correlated with the communication patterns of Bob, which
+makes intuitive sense, as they are not involved in conversations with Bob.
+% I might remove this next sentence, it seems like a thing reviewers could nitpick,
+% but also isn't all that consequential if it's not true.
+The regularity (that these probabilities are
+fixed and the events are independent)
+is most reasonable when considering short attack windows, during
+which any user's activity level will be relatively constant.
+
+\medskip \noindent
+\textbf{Theoretical attack success bound.} In our attack, all users in the system are ranked according
+to their chances of being an associate of Bob after some number of
+target and random epochs. We now provide bounds on the number of epochs
+necessary to ensure that an arbitrary associate Alice is ranked higher
+than \emph{all} non-associates.
+
+\begin{theorem}\label{thm:stats}
+  Assume $m$ total users in a messaging system.
+  Let Alice be an associate of the target Bob with
+  probabilities $r_a, t_a$ of appearing in a random or target epoch
+  respectively. Then, under the stated assumptions above, the
+  probability that Alice is ranked higher than all non-associates after
+  $n$ random and target epochs is at least
+  \[1 - \frac{m}{c_a^{\phantom{a}n}},\]
+  where $c_a = \exp((t_a-r_a)^2/4) > 1$ is a parameter that depends only
+  on Alice's probabilities $t_a$ and $r_a$.
+\end{theorem}
+
+The proof is a relatively standard analysis based on Hoeffding's
+inequality \cite{hoeffding}, and can be found in \cref{sec:signal-stats-proof}.
+
+We point out a few consequences of this theorem:
+\begin{itemize}[nosep]
+  \item The success of the attack depends only on the target user Bob
+    and his sought-after associate Alice, not on the relative activity
+    of any other users.
+  \item The number of epochs needed to de-anonymize Alice with high
+    probability scales \emph{logarithmically} with the total number of
+    users.
+  \item The attack succeeds most quickly when Bob is in few other conversations
+    (so $t_a$ is large) and
+    Alice is communicating mostly just with Bob (so $r_a$ is small).
+\end{itemize}
+
+The following corollary, which results from solving the inequality of
+\cref{thm:stats} and applying a straightforward union bound, gives an
+estimate on how many epochs are necessary to discover all of Bob's
+contacts with high probability.
+
+\begin{cor}\label{cor:epochs}
+  Let $0<p<1$ be a desired probability bound, and
+  assume $m$ total users in a messaging system, of whom $b$ are
+  associates of a target user Bob, where the $i$'th associate has
+  probabilities $r_i,t_i$ of appearing in a random or target epoch
+  respectively. Then, under the previous stated assumptions, with
+  probability at least $p$, all $b$ associates of Bob are correctly
+  identified after observing
+  \[\frac{4}{\min_i (t_i-r_i)^2}\left(
+    \ln(m) + \ln(b) + \ln\left(\tfrac{1}{1-p}\right)
+  \right)\]
+  target and random epochs.
+\end{cor}
+
+Comparing to prior work, the closest SDA which has a similar theoretical
+bound is from Danezis~\cite{SDA}%
+\footnote{Unfortunately, there appear to be at least three slightly different
+versions of this bound in the published literature
+(\cite[equation (6)]{SDA}; \cite[equation (9.8)]{danezis-thesis};
+\cite[page 5]{SDA-MD05}), making it difficult to compare bounds.}.
+That work makes much stronger regularity assumptions than our model,
+assuming essentially that (1) all epochs contain the same number of
+messages (2) every target epoch contains exactly one reply from Bob, (3)
+Bob receives a message from each associate with uniform probability, and
+(4) all other users, and recipients, are selected uniformly at random
+from all $m$ users. Later work also includes a
+theoretical bound~\cite{LSDA}, but their model is much more general than ours, where
+they seek to reveal the entire network rather than a single target
+user.
+
+% \dan{note, we don't look good in the following comparison}
+% In our setting, these additional restrictions from \cite{SDA} mean that
+% each associate $i$ has the same target and random epoch probabilities,
+% $t_i=t_a=\frac{1}{b}$ and $r_i = r_a$, and the mix threshold (for their
+% setting) is exactly $mr_a$.
+% Then, in our context, the minimum number of rounds of
+% observation required by \cite{SDA}\cref{thesisnote}, in order to
+% identify all associates with 99\% probability, is
+% \[9b^2\left(\sqrt{\frac{m-1}{m^2}(mr_a - 1)} +
+% \sqrt{\frac{m-1}{m^2}(mr_a - 1) + \frac{b-1}{b^2}}\right)^2.\]
+
+
+
+\subsection{Attack simulation}
+\label{sec:signal-attacksim}
+%\subsection{Simulations} % description of the simulations, different graph
+% structures, include plots of multiple graph structures, comparison to python
+% list model, effect of longer epochs
+
+%\TODO{needs a pass for attack 3}
+
+
+We cannot directly validate the effectivenesses of our attacks in practice, as
+we do not have access to Signal's servers and there is no public sample dataset
+of Signal sealed sender messages. Instead, we perform \emph{simulations} based
+on generalized but realistic assumptions on message patterns. We do not claim
+our simulations will reveal the exact number of messages needed to deanonymize
+a particular user, as that would depend on exact messaging patterns.
+Rather, our simulations give a sense of the order of magnitude of messages
+needed to deanonymize a user.
+
+
+We simulated sequences of target and random epochs (e.g. epochs where Bob does
+or does not receive a message) and ranked users by their score. Recall that
+a user's score increases if they appear in a target epoch. We simulated
+1~million active users, with 800 messages per epoch. This corresponds to users
+sending on average about 70 messages per day, with 1~second epochs\footnote{Based off our observation of round-trip delivery receipt times}.
+
+Within each epoch, we select a random set of 800 message destinations. In a
+target epoch, Alice (the associate) is sent a message to represent Bob's
+delivery receipt that would be sent to her automatically. The remaining messages
+are chosen randomly: 25\% of messages are selected as ``repeat'' messages (same
+sender and receiver) from
+prior epochs (representing one side of a prior conversation), and another 25\%
+are selected as ``responses'' to messages in prior epochs (representing a
+conversation's response). The remaining 50\% of messages are messages from and
+to a random pairing of users from the set of 1~million active users. We find
+that the percent of repeats/replies has limited impact on the number of epochs
+to identify an associate until over nearly all messages are repeats (i.e. each
+epoch is essentially the same small set of senders/receivers). We choose half of
+the epochs to be target epochs (where Alice messages Bob) and half as random
+(where Alice does not message Bob).
+
+
+\medskip \noindent
+\textbf{Social graph significance.}
+We note our experiment does not rely on a particular social graph (or rather,
+assumes a fully connected one), as any user
+can message any other. In preliminary experiments, we examined the impact 
+of several different graph
+generators that are designed to simulate social networks, but found 
+no noticable change in our results. Specifically, we used
+the Erd{\"o}s-R{\'e}nyi~\cite{erdos1959random} model,
+Barab{\'a}si-Albert~\cite{albert2002statistical} model,
+Watts-Strogatz~\cite{watts1998collective} model, and a fully connected graph,
+but found they all resulted in a similar number of epochs
+needed to deanonymize the associate (Alice). Given this result, we opted to use
+the fully connected graph model for simplicity.
+
+
+
+
+% \VariantThree
+\cref{fig:signal-combinedfigure} shows the result of several attack simulations.
+We ran each attack simulation for 100 runs, and at each epoch, report the
+average rank of Alice's score based on our attack.
+% Alice only
+First, in the ``Alice Only'' variant, only Alice messages Bob (and no one else).
+Even though there are thousands of other users messaging randomly, Alice's score
+quickly becomes the top ranked user: within 5 messages, she is uniquely
+identified as messaging Bob. 
+
+% Multiple users
+If multiple users are also messaging Bob while Alice
+does, it takes more total epochs to identify Alice (and her co-associates
+messaging Bob). In this scenario, each target epoch is selected to be either
+Alice or one of 5 co-associates that messages Bob (6 total conversations with Bob).
+
+% Popular users
+If there are popular users present (e.g. users that receive messages in a large
+fraction of all epochs), then it may be more difficult to identify Alice without
+accounting for them. However, since we remove users that also appear in a large
+fraction of random epochs, Alice is still eventually ranked uniquely as messaging Bob.
+
+% We simulated 1000 such popular users, and show that Alice's
+% average rank does not fall below this when we do not account for them (``Popular
+% users variant 2'' line). 
+
+
+% combined
+Finally, we combine our popular users and multiple messagers into a single simulation,
+which is dominated by the multiple messagers effects.
+
+\medskip \noindent
+\textbf{Summary.}
+In the worst case, it takes on the order of 60 epochs to identify the users
+messaging Bob. Note that only half of these are messages to Bob, and the other half are random epochs.
+If only one person is messaging Bob, the number of messages needed is under 5 to
+identify Alice as the associate of Bob.
+
+
+% Move to discussion/solution section?
+% \EpochEffect
+
+
+\if0
+The Erd{\"o}s-R{\'e}nyi model
+assumes that each pair of nodes is equally likely to be connected, and connects
+nodes accordingly, while the Barab{\'a}si-Albert model attempts to mimic systems
+with certain nodes being more popular (and more connected) than others, and the
+Watts-Strogatz model attempts to form clusters, or cliques, in the generated
+graph
+\fi
+
+
+
+\if0
+%%%%%%%%%%% OLD STUFF:
+
+%As described above, there are multiple options users could have enabled that
+%would impact the attack.  Most importantly, if users have Typing Notifications
+%enabled, their devices would generate messages that might pollute the data
+%collection process. We start our analysis with the simplifying assumption that
+
+%We start by evaluating Attack 1, which assumes
+%both users have typing notifications disabled, the default setting, and that
+%only Alice is messaging Bob.
+%Additionally, we assume that Bob's device ``immediately'' responds with an
+%easily identifiable \textit{delivery receipt}. We remove these simplifying
+%assumptions in Attack 2, described in Section~\ref{sssec:attack}
+
+To determine the effectiveness of our attacks, we generate simulated
+communication logs that can be processed by the attacker. These logs represent
+the information an adversarial service provider (e.g. Signal) could observe; in
+the case of sealed sender messages, only the destination and time of messages
+are included in the log.
+
+To generate realistic communication logs, we start by generating a
+{\em graph} of simulated users, with nodes as users and edges signifying a
+messaging relationship between users. Our graph simulation and evaluation code
+is 500 lines of C code, using the igraph~\cite{igraph} library to generate
+graphs. We discuss our graph generation methodology in more detail next in
+\cref{sssec:signal-graphgeneration}.
+%\adam{Should we maybe consider the likelihood two friends will communicate? Like as a label on an edge? }
+
+Communication logs are then generated based on the graph.  Because the attack is
+only concerned about periods of time in which a message to Bob is observed, we
+limit our log generation to those time periods.  During each of these epochs, a
+random subset of connected nodes {\em also} communicate, adding messages into
+the communication log. We discuss communication log generation in more detail in
+\cref{sssec:signal-loggeneration}.
+
+Finally, we use the generated logs to launch the attacks. For each epoch the
+list of users that received a message are saved and intersected or tallied with
+the list from the other epochs. We discuss our attack evaluation in
+\cref{sssec:signal-attack}.
+
+%This is continued until a single sender is identified
+%as part of the communicating pair, Alice and Bob for some target, Bob. More
+%details, and variants of this attack are discussed in \cref{sssec:attack}.
+
+
+We performed a Monte-Carlo simulation based on our generated logs for both
+attacks to determine how quickly an adversary could identify that Alice was
+sending messages to Bob in the presence of other traffic.
+As summarized in \cref{fig:signal-NumMessages}, with a user base of 1~million
+users, our simulation of Attack~1 finds that on average, Alice can be identified
+(deanonymized) after she sends 6.5~messages to Bob.
+%We now
+%examine graph generation, log generation and the attack in more detail.
+
+\FigIdentifySender
+
+\subsubsection{Graph Generation}
+\label{sssec:signal-graphgeneration}
+
+Without access to a real social messaging graph, we are limited to using graph
+structures in the literature. 
+We examined multiple graph generators that aim to
+simulate social networks, including the
+Erd{\"o}s-R{\'e}nyi~\cite{erdos1959random} model,
+Barab{\'a}si-Albert~\cite{albert2002statistical} model, and the
+Watts-Strogatz~\cite{watts1998collective} model. The Erd{\"o}s-R{\'e}nyi model
+assumes that each pair of nodes is equally likely to be connected, and connects
+nodes accordingly, while the Barab{\'a}si-Albert model attempts to mimic systems
+with certain nodes being more popular (and more connected) than others, and the
+Watts-Strogatz model attempts to form clusters, or cliques, in the generated
+graphs. As we show in \cref{fig:signal-NumMessages}, the structure of the graph
+does not significantly impact the effectiveness of the attack. Indeed, we even
+simulate the attack on a complete graph, in which any user might communicate
+with any other user. This shows that the structure of the graph does not impact
+the attack.
+
+\subsubsection{Log Generation}
+\label{sssec:signal-loggeneration}
+
+Once the graph structure has been fixed, we use it to generate a communication
+log. Because the attacker need only look at messages that were sent around the
+same time Bob received a message, we only generate the portions of the overall
+communication log that are near those events.  We fix the messaging rate for
+Signal, assuming 1 million daily users at 579 messages per second. This number
+assumes that each Signal user would send approximately 50 messages each day.
+
+We then select the length of time after a message to Bob that the adversary
+watches for potential response (receipt) messages. We refer to this length of
+time as an \emph{epoch}, and by default choose a length of 1 second. This is
+natural for delivery receipts which are sent immediately if the receiving device
+(Bob) is online. Given our messaging rate, we then generate the simulated
+messages that would be sent during that epoch. We also consider epochs of
+different lengths; the effects varying the epoch length can be seen in
+\cref{fig:signal-epoch-effect}.
+
+
+Naturally, a limitation of our analysis is that it misses message rate
+variation that may be present in a true distribution of messages due to
+population timezeones or message bursts around particular events or times.
+Nonetheless, we believe our simplified model still captures the most important
+dynamics relevant to our attack.
+
+\EpochEffect
+
+Each epoch is filled with a fixed number of messages based off conservative
+estimations of Signal usage, assuming that each user will send 50 Signal sealed
+sender messages each day. From this the number of messages in each epoch can be
+calculated from the number of users in the system.
+
+As each epoch represents a message being sent to Bob, the message in the
+following epoch are generated as follows: First, for Attack~1, a message to
+Alice always appears in the following epoch, representing the delivery receipt
+from Bob for her message. For the first epoch, the other messages are generated
+by selecting a random node as a sender and choosing one of their possible
+recipients at random.
+
+\PercentageEffect
+
+
+In subsequent epochs, messages are generated to include ``responses'' for
+messages sent in previous epochs. 50\% of the messages will still be chosen {\em
+randomly}, unrelated to previous epochs (again selected by choosing random users
+and selecting random connected peers as the message destination). 25\% of the
+messages are {\em replies} to messages sent in any previous epochs, switching
+the `to' and `from'\footnote{Although this attack and Signal do not have access
+to the `from' fields of Sealed Sender messages, we use the identity of the
+sender for the purpose of log generation only we include the `from' field.}
+fields of a previous message (e.g. if Charlie sent Dave a message, a reply would
+have Dave sending Charlie a message in a subsequent epoch).  Finally, 25\% are
+{\em repeated} messages from a previous epoch (the same `to' and `from' fields
+as a previous message).
+%TODO: what happens when we choose different % for each? is there a significant
+%impact on our attack based on changing these parameters?
+
+For Attack~2, where not all messages generate replies to Alice, we only include
+Alice in an epoch with probability $f$.  In the remaining $(1-f)$ fraction of
+the epochs, Alice's message is replaced with one from a random user.
+
+% below is not exactly true, needs to be cleared up
+% maybe just say that we'll only be looking at complete model (now generated in Python)
+% As the attack intersects lists of users that could potentially be messaging
+% Alice, we expect that the 25\% of messages that are replies to messages from
+% previous epochs have a minimal effect, as well as the 50\% of messages that are
+% randomly generated. To test this we wrote a simplified simulation in Python,
+% that uses a complete graph model (every user is connected to every other user)
+% and communications in epochs after the first are only 25\% of repeated messages
+% from previous epochs and 50\% of messages unrelated to previous epochs.
+
+The breakdown of random/replies/repeats was chosen arbitrarily, and we
+expect it to have a significant impact on the number of messages needed to
+complete the attack (identify Alice). In particular, for Attack~1, the 25\% of
+messages that are repeats from previous epochs will extend the time the
+intersection of all epochs' recipients will be more than just Alice. We examined
+the effect this percent has in \cref{fig:signal-percentageEffect}, finding that
+larger percents of repeated messages require more messages to identify Alice as
+the sender to Bob. We note that ``repeated'' messages in this context mean
+messages that are correlated with Alice sending Bob a message. An example would
+be that Dave frequently receives a message whenever Alice receives a message,
+potentially because Dave is communicating with someone else in a similar pattern
+as Alice and Bob. We expect such
+unrelated cross-user message correlation to be relatively low in practice.
+
+% \PercentageEffect
+
+\subsubsection{Evaluating Attack~2}
+\label{sssec:signal-attack}
+
+\RankGraph
+
+In Attack~2 (\cref{sec:signal-attack2}), there are potentially messages that Bob
+receives that will not elicit a response to Alice, and we instead simply look
+for the \emph{most common} user across all epochs, rather than the one that
+appeared in all of them (as in Attack~1).
+
+%As mentioned above, the previous subsections have dealt with a simplified model
+%in which messages can be distinguished from receipts and Typing Notifications
+%are disabled. We now examine the realistic model in which Alice and Bob enable
+%Typing Notifications and all short messages, including receipts and Typing
+%Notifications, are indistinguishable.
+
+\LikelihoodGraph
+
+For these simulations, we use the same graph generation methodology as before.
+We generate messages similar to before,
+with 25\% repeated message, 25\% response messages
+and 50\% new random messages.  We also generate the same number of {\em
+receipts}, simulated as replies from the previous epoch.
+
+To simulate the possibility that Bob received a typing notification or another
+kind of message that won't solicit a message to Alice, Bob
+will not send a delivery receipt in every round. Similarly to model that other
+users may send messages to Bob as well, some epochs are started by messages from
+users other than Alice (and as such the delivery receipt is sent to them
+instead). Instead, Bob sends a delivery receipt to Alice only with probability
+$f$, which we vary from 10-90\%\footnote{$f = 100\%$ is equivalent to
+Attack~1}.
+
+%When Alice is having a conversation (repeated messages to each other) with Bob,
+%Alice will show up routinely as the receiver of a sealed sender message shortly
+%after Bob receives a message. Due to typing notifications being enabled there
+%are some sealed sender messages that will be sent to Bob that do not prompt a
+%delivery receipt from Bob to Alice. Bob may also be having a conversation with
+%another Signal user. As such there will also be epochs which do not
+%feature Alice. Thus the aforementioned intersection attack will inherently fail
+%in this scenario. To address this an attacker can keep track of how many times
+%each user receives a sealed sender message shortly after Bob does. This count
+%will likely be very noisy at first, due to 579 messages being sent every epoch.
+%However, Alice consistently messaging Bob will result in her eventually showing
+%up as the receiver of a sealed sender message more often than other users not
+%conversing with Bob.
+
+Attack~2 counts the number of times each user identity
+appears as a destination of a sealed sender message in each epoch after Bob
+receives a message. A simple strategy is to wait for $N$ messages to Bob, and
+then identify the user with the highest count as the person messaging Bob.
+\cref{fig:signal-AliceLikelihood} shows the chance that an attacker will pick
+Alice when using this strategy for 5 different values of $f$. We find that with
+$f = 90\%$, it takes about 20 messages but with $f = 50\%$, it may take upwards
+of 80 messages. For lower values of $f$ (as Bob receives more messages from
+others or Alice sends multiple typing events per message), it takes even longer
+to correctly identify Alice.
+
+
+% TODO: make this about anonymity set
+\cref{fig:signal-AliceRank} examines how Alice's (the correct sender) count
+compares to other users. It effectively measures how the
+``anonymity set'' of senders shrinks as more messages are sent to Bob. Even with
+only a dozen messages, there are relatively few candidates that might have sent
+Bob a message, which may be useful enough of a signal for an adversary to
+identify the true sender given other information.
+
+\subsubsection{Accounting for popular users}
+In \cref{sec:signal-attack3}, there are users which are inherently popular
+using the messaging service. Due to their popularity they provide a cover for
+Alice, in that popular users will show up just as often as Alice does (or more
+often if other users are messaging Bob, or Bob receives event messages).
+
+To address this in simulations, we generate additional epochs worth of messages
+where Bob has \emph{not} received a message. This provides a ``base rate'' of
+activity on the service. These additional epochs are generated in between ``Bob
+epochs'' to keep an updated pulse on the activity through the servers. The
+results of the additional epochs are fed into (and subtracted from) the
+\emph{counter} keeping track of who shows up most often. It is conceivable that
+Alice might also be messaging another user between messaging Bob, and as such
+show up in a non-``Bob epoch''. As such these additional epoch are taken at
+random intervals so as not to provide a natural cover for Alice.
+
+The number of epochs examined between ``Bob epochs'' can be modified by the
+service provider as necessary to make appropriate accomodations for how often
+popular users show up. Our simulations find success with generating only two
+additional epochs for each ``Bob epoch''. The results can be examined in
+\cref{fig:signal-variant3}.
+
+\VariantThree
+
+%As Alice may not be receiving a
+%receipt the intersection attack will now fail to determine Alice as the sender,
+%Figure~\ref{fig:AlicePercentile} examines how Alice's likelihood of being sender
+%compares to other users as a function of time and
+%Figure~\ref{fig:AliceLikelihood} examines the chances of success the attacker
+%will have in determining that Alice is messaging Bob if they guess the user who
+%shows up most often is the user conversing with Bob as a function of the number
+%of messages Bob receives. 
+
+%\PercentileGraph
+
+% \RankGraph
+
+\fi

@@ -1,0 +1,105 @@
+%% protocol stuff
+\newcommand{\createid}{\ensuremath{\textsf{CreateID}}}
+\newcommand{\token}{\ensuremath{\textsf{token}}}
+\newcommand{\address}{\ensuremath{\textsf{address}}}
+\newcommand{\sendingkey}{\ensuremath{\textsf{sendingKey}}}
+\newcommand{\send}{\ensuremath{\textsf{Send}}}
+\ifdefined\sign
+\renewcommand{\sign}{\ensuremath{\textsf{Sign}}}
+\else
+\newcommand{\sign}{\ensuremath{\textsf{Sign}}}
+\fi
+\newcommand{\pubkey}{\ensuremath{\textsf{pubKey}}}
+% \newcommand{\sig}{\ensuremath{\textsf{sig}}}
+% \newcommand{\verify}{\ensuremath{\textsf{Verify}}}
+\newcommand{\sendmsg}{\ensuremath{\textsf{SendMessage}}}
+
+% Commenting Stuff
+\newcommand{\gsk}[1]{\textcolor{cyan}{GSK:#1}}
+\newcommand{\dsr}[1]{\textcolor{red}{DSR:#1}}
+
+\newcommand{\bsscheme}{\ensuremath{\Pi_{\text{bs}}}}
+\newcommand{\bskeygen}{\ensuremath{\mathsf{BSKeyGen}}\xspace}
+\newcommand{\bsblind}{\ensuremath{\mathsf{BSBlind}}\xspace}
+\newcommand{\bssign}{\ensuremath{\mathsf{BSSign}}\xspace}
+\newcommand{\bsextract}{\ensuremath{\mathsf{BSExtract}}\xspace}
+\newcommand{\bsverify}{\ensuremath{\mathsf{BSVerify}}\xspace}
+
+% For the definitions stuff
+
+\newcommand{\serviceprovider}{\ensuremath{P_{\text{service}}}}
+
+\newcommand{\startconvo}{\ensuremath{\mathsf{StartConvo}}}
+\newcommand{\sendmessagealg}{\ensuremath{\mathsf{SendMessage}}}
+\newcommand{\receivemessagealg}{\ensuremath{\mathsf{ReceiveMessage}}}
+\newcommand{\sentmessage}{\ensuremath{\mathsf{Sent}}}
+\newcommand{\approvesendmessage}{\ensuremath{\mathsf{ApproveReceiveMessage}}}
+\newcommand{\approvesendmessageanonymous}{\ensuremath{\mathsf{ApproveAnonymousReceiveMessage}}}
+\newcommand{\notifysendmessage}{\ensuremath{\mathsf{NotifySendMessage}}}
+\newcommand{\notifyanonymoussendmessage}{\ensuremath{\mathsf{NotifyAnonymousSendMessage}}}
+\newcommand{\notifysendmessagecorrupt}{\ensuremath{\mathsf{NotifySendMessageCorrupt}}}
+\newcommand{\approvenewconvo}{\ensuremath{\mathsf{ApproveNewConvo}}}
+\newcommand{\approvenewconvocorrupt}{\ensuremath{\mathsf{ApproveNewConvoCorrupt}}}
+\newcommand{\newconvo}{\ensuremath{\mathsf{NewConvo}}}
+\newcommand{\convoinitialized}{\ensuremath{\mathsf{ConvoInitialized}}}
+\newcommand{\approve}{\ensuremath{\mathsf{Approve}}}
+\newcommand{\disapprove}{\ensuremath{\mathsf{Disapprove}}}
+\newcommand{\error}{\ensuremath{\mathsf{Error}}}
+\newcommand{\injectcorruptmessagesalg}{\ensuremath{\mathsf{ApproveReceiveMessageCorrupt}}}
+
+\newcommand{\convoid}{\ensuremath{\mathtt{cid}}}
+\newcommand{\msgid}{\ensuremath{\mathtt{mid}}}
+
+\newcommand{\sender}{\ensuremath{P_i}}
+\newcommand{\senders}{\ensuremath{P_s}}
+\newcommand{\receiver}{\ensuremath{P_j}}
+\newcommand{\receiverr}{\ensuremath{P_r}}
+\newcommand{\personx}{\ensuremath{P_*}}
+
+\newcommand{\activeconvotable}{\ensuremath{C_{\text{active}}}}
+\newcommand{\pendingtable}{\ensuremath{M_{\text{pending}}}}
+
+\newcommand{\securityparameter}{\ensuremath{\lambda}}
+\renewcommand{\secparam}{\securityparameter}
+
+\ifdefined\adversary
+\renewcommand{\adversary}{\ensuremath{\mathcal{A}}}
+\else
+\newcommand{\adversary}{\ensuremath{\mathcal{A}}}
+\fi
+\renewcommand{\negl}{\ensuremath{\mathsf{{\bf negl}}(\securityparameter)}}
+
+\renewcommand{\simulator}{\ensuremath{\mathsf{Sim}}}
+\renewcommand{\sim}{\simulator}
+
+\newcommand{\keytable}{\ensuremath{\mathbb{K}}}
+\newcommand{\mbid}{\ensuremath{\mathsf{mbid}}}
+
+% \newcommand{\pk}{\ensuremath{pk}}
+% \newcommand{\sk}{\ensuremath{sk}}
+
+\newcommand{\pksign}{\ensuremath{pk_{\text{sign}}}}
+\newcommand{\sksign}{\ensuremath{sk_{\text{sign}}}}
+
+\newcommand{\sealedsenderencryptionscheme}{\ensuremath{\Pi_{\text{ssenc}}}}
+\newcommand{\sealedsenderencryptiongen}{\ensuremath{\mathsf{SSKeyGen}}}
+\newcommand{\sealedsenderencryptionenc}{\ensuremath{\mathsf{SSEnc}}}
+\newcommand{\sealedsenderencryptionvdec}{\ensuremath{\mathsf{SSDecVer}}}
+%\newcommand{\sealedsenderencryptiondec}{\ensuremath{\mathsf{SSDec}}}
+%\newcommand{\sealedsenderencryptionverify}{\ensuremath{\mathsf{SSVer}}}
+\newcommand{\sealedsenderauthscheme}{\ensuremath{\Pi_{\text{ssauth}}}}
+\newcommand{\sealedsenderauthschemegenerate}{\ensuremath{\mathsf{DTGen}}}
+\newcommand{\deliverytoken}{\ensuremath{t}}
+\newcommand{\sealedsenderauthschemeauth}{\ensuremath{\mathsf{DTAuth}}}
+\newcommand{\sealedsenderauthschemeverify}{\ensuremath{\mathsf{DTVerify}}}
+
+\newcommand{\hybrid}[1]{\ensuremath{\mathcal{H}_{#1}}}
+
+% cleveref
+% \crefname{step}{step}{steps}
+% \Crefname{step}{Step}{Steps}
+\crefname{ass}{assumption}{assumptions}
+\Crefname{ass}{Assumption}{Assumptions}
+
+\newcommand{\Ex}[1]{\ensuremath{\mathbb{E}[#1]}}
+\newcommand{\Xbar}{\ensuremath{\bar{X}}}

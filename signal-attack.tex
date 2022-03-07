@@ -1,0 +1,476 @@
+\section{Attack Description}\label{sec:signal-attack}
+
+We will present a kind of \emph{statistical disclosure attack} (SDA)
+that can be used to de-anonymize a single user's contacts after a chain
+of back-and-forth messages, each of which is sent using sealed sender.
+
+We first explain how, especially in the presence of delivery receipts, a
+sealed-sender messaging system can be viewed as a kind of mix network;
+this observation allows for the use of SDAs in our context and can be
+viewed as one of our contributions.
+
+Next, we detail a simple attack for our specific use-case of sealed
+sender messaging, which can be viewed as a special case of an SDA attack
+proposed in \cite{SDA-MD05}. 
+%As we will see in the next section, by
+%targeting this specific application, our attack can de-anonymize a
+%single target user's contacts in many fewer rounds than existing
+%SDAs in the literature.
+
+\subsection{From mixnets to sealed-sender}
+
+In anonymous networking, a simple \emph{threshold mix} works as follows:
+When Alice wants to send a message to Bob, she instead encrypts it and
+sends it to a trusted party called the \emph{mix}.
+Once the mix receives messages from a certain
+threshold $\tau$ number of other senders, the mix decrypts their destinations,
+shuffles them, and sends all messages out to their destinations at once.
+In this way, a network attacker can observe which users are sending messages and which are receiving message, but cannot easily infer which pairs of individuals are directly communicating.
+
+The basis of SDAs, first proposed by \cite{SDA},
+is that the messages sent through the mix over multiple
+rounds are not independent; a user such as Alice will normally send
+messages to the same associates (such as Bob) multiple times in
+different rounds. In the simplest case, if Alice sends messages only to
+Bob, and the other users in each round of mixing are random, then a
+simple \emph{intersection attack} works by finding the unique common
+destination (Bob) out of all the mixes where Alice was one of the
+senders.
+
+Over the last two decades, increasingly sophisticated variants of SDAs
+have been proposed to incorporate more complex mix networks~\cite{SDA-MD05}, 
+infer sender-receiver connections~\cite{reverse-SDA},
+adapt to the possibility of anonymous replies~\cite{two-sided-SDA}, and
+to use more powerful techniques to discover information about the entire
+network topology~\cite{vida-SDA,LSDA}.
+Fundamentally, these all follow a similar anonymous networking model,
+where an attacker observes messages into and out of a mix network, and
+tries to correlate senders and receivers after a large number of
+observations.
+
+At first, it seems that the setting of sealed-sender messaging is quite
+different: the server (acting as the mix) does not apply any thresholds
+or delays in relaying messages, and the sender of each message is
+completely anonymous. Our key observation is that, \emph{when many
+messages receive a quick reply}, as will be guaranteed in the presence
+of delivery receipts, a sealed-sender messaging system can be
+modeled as a kind of mix network:
+\begin{itemize}
+  \item The \emph{recipient} of a message, Bob, is more likely to send
+    some reply in a short time window immediately after he receives a
+    message: we call this time window an \emph{epoch}.
+  \item Bob's reply to Alice is ``mixed'' with an unknown, arbitrary number of other
+    messages (which could be either normal messages or replies) during
+    that epoch.
+  \item The recipients of all messages during that epoch (following the
+    message Bob received), can be considered as the message recipients
+    out of the mix. Alice, who originally sent a message to Bob and is
+    expected to receive a quick reply, will be among these recipients.
+\end{itemize}
+
+The task of our SDA, then, is to observe many such epochs following
+messages to a single target user, Bob, and attempt to discern the user
+Alice who is actually sending messages to Bob.
+
+\subsection{Attack Overview} % description of what the attack is, basically just
+% intersection
+\label{ssec:signal-attackoverview}
+
+Before proceeding to an overview of our attack, we first fix the terminology we will use:
+\begin{description}[noitemsep]
+  \item[Target/Bob] The single user who is being monitored.
+  \item[Associate/Alice] Any user who sends some message(s) to the target Bob during the attack window
+  \item[Non-associate/Charlie] Any other user not sending messages to the target Bob.
+  \item[Attack window] The entire time frame under which the attack
+    takes place, necessarily spanning multiple messages sent to the target
+    Bob.
+  \item[Target epoch] A single epoch during the attack window
+    immediately following a sealed sender message to the target. The epoch
+    length is fixed depending on how long we should expect to see a
+    response from the recipient.
+  \item[Random epoch] A single epoch during the attack window,
+    of the same length as a Target epoch,
+    but chosen uniformly at random over the attack window independently
+    from Bob.
+\end{description}
+
+As discussed above, our attack setting is that a single
+user, Bob, is being targeted to discover an unknown associate Alice who
+is sending messages to Bob. Our SDA variant is successful when we can
+assume that Alice is more likely to appear as a message recipient in a
+\emph{target epoch} immediately following a message received by Bob,
+than she is to appear in a \emph{random epoch} when Bob did not receive
+a message.
+
+Specifically, our attack is executed as follows:
+\begin{enumerate}[nosep]
+  \item Create an empty table of counts; initially each user's count
+  is zero.
+  \item Sample a \emph{target epoch}. For each user that received a
+  message during the target epoch, increase their count in the table by 1.
+  \item Sample a \emph{random epoch}. For each user that received a
+  message during the random epoch, decrease their count in the table by 1.
+  \item Repeat steps 2 and 3 for $n$ target and random epochs.
+  \item The users in the table with the highest counts are most likely
+  to be \emph{associates} of the target.
+\end{enumerate}
+
+\AttackOverview
+
+\cref{fig:signal-AttackOverview}
+gives a small example to illustrate this attack.
+
+This is similar to the original SDA of \cite{SDA}, with a few of the
+improvements from \cite{SDA-MD05} that allow for unknown recipient and
+background traffic distributions, more complex mixes such as pool mixes,
+and dummy traffic. In our setting, this means that we do not need to
+know \emph{a priori} which users in the system, or which associates of
+the target user, are more or less likely to receive messages. We also do
+not need a guarantee that a reply is sent during \emph{every} target
+epoch, or that the reply is always sent to the same associate Alice.
+
+Essentially, our attack relies only on the assumptions that the
+distribution of background noise in each target/random epoch pair is the
+same, and that associates of the target are more likely to appear in
+target epochs than random epochs. Under only these assumptions, we can
+see that the expected count of any non-associate, over enough samples,
+is zero, while the expected count of any associate will increase
+linearly with the number of samples.
+
+Compared to existing SDAs in the literature, our attack is more limited
+in scope:
+it does not attempt to model the complete distribution of all
+connections in the system, but merely to separate the associates from
+non-associates of a single target user. We also assume that the number
+of target and random epochs are the same (though this limitation would
+be easy to overcome). These limitations allow our attack to be
+very efficient for the attacker, who just needs to update a table for
+each user in each sample, and then find the largest values at the end to
+identify Bob's (likely) associates.
+
+Clearly the question that remains is, how large must the number of
+samples $n$ be in order for this attack to succeed? As we will see in the next section,
+the limited scope of our attack also makes it efficient in this sense:
+in reasonable settings, our attack requires only a handful of epochs to identify
+the target's associates with high probability.
+%one or two orders of
+%magnitude fewer observations to identify the target's associates with
+%high probability.
+
+\ifdefined\oldattacktext
+
+\subsection{old description of attack}\todo{delete from here to end of
+attack.tex}
+
+% In this section we detail the specifics of identifying communicating parties in
+% SEEM services despite the use of \textit{sealed sender}. The
+% attack works by correlating the timing of sealed sender messages to determine
+% the identities of the conversing parties. We start by leveraging
+% the timing correlation between a sealed sender message sent to Bob and the
+% \textit{delivery receipt} that is automatically generated by Signal and
+% delivered to Alice. By correlating message sending to delivery receipt events,
+% an attacker can reliably identify both parties in an exchange. Our discussion
+% focuses on Signal, as it is the only messeneger to implement sealed sender,
+% though our attack could conceivably work on other systems (like
+% Telegram or WhatsApp) should they release a similar feature.
+% 
+% 
+% For simplicity, we start by assuming that Bob's device is online when Alice
+% sends him messages (so his device will respond immediately with a delivery
+% receipt). We later explore the impact of removing this assumption on our attack
+% effectiveness.
+
+
+
+
+
+%In the remainder of this section, we describe the attack in more detail, as well
+%as our simulation of the attacks effectiveness. In the following section, we
+%outline a solution to the identification attack. 
+
+% messages sent We verify the attack using a simulation, whereby an adbersary that can monitory message flows, as would be the case for an SM service or a global network monitor.   
+
+% %
+% Assuming the sender sends a message ``sealed sender'' such that the service provider only learns the recipient, we show that a global adversary (as would be the vantage point of the service provider, if so compelled) can in fact identify the sender by monitoring the read receipts, which are sent sealed sender back to the originator of the message.
+
+% While we focus our discussion on Signal, 
+
+% The attack is
+% successful if the attacker can determine which user is sending  `sealed sender'
+% messages to a targeted victim by examining only which users are receiving read
+% receipts. In the case of Signal it can be simplified to see who is receiving
+% acknowledgments of sent messages, as these are more consistent.
+
+% could cut first sentence, and replace "this" in next with "sealed-sender"
+Recall that a \emph{sealed-sender message}, as implemented by the
+Signal protocol for instance, reveals only the recipient's identity to the service provider but not that of the sender.
+In this section, we detail an attack which demonstrates that this
+anonymity is not preserved over multiple messages, when an attacker can
+analyze the timing and recipients of multiple encrypted, sealed-sender
+messages.
+
+The basic problem is that \emph{a message generally elicits a response},
+and this is especially (and predictably) true in the presence of
+delivery receipts.  No matter the kind of {\em response} message, the original sender's identity is revealed to the server,
+who can then use the timing between this and the original message to
+probabilistically determine which users may be communicating. Extended
+over multiple messages, as we will demonstrate, this attack quickly and
+completely de-anonymizes the original sender.
+
+Suppose Alice sends a sealed sender message to Bob. To the attacker, this
+appears as a message to Bob from an unknown sender, whom the attacker is
+attempting to identify.
+Typically, Bob will then send a response message to Alice,
+%either in the form of a delivery receipt or a real response message,
+which the
+attacker observes as a separate sealed sender message to Alice from an
+unknown sender.
+By examining the recipients of messages over a short time (\emph{epoch})
+after a message is delivered to Bob, the attacker will eventually be able to identify Alice.
+%Figure~\ref{fig:AttackOverview} shows an overview of our attack.
+
+There are several practical complications when performing this attack in
+practice. First, there are many users in the system sending
+messages simultaneously, and therefore will likely be other (sealed sender)
+messages unrelated to Alice or Bob during the epoch. However, if Alice sends
+multiple messages to Bob, and each elicits a response, then Alice can
+still be identified due to her presence as a recipient in {\em multiple}
+epochs.  Second, an attacker must determine the {\em length} of each epoch --- that is, how long after each message to Bob should the
+attacker look for potential responses from Bob back to Alice.
+Fortunately for the attacker, \emph{this problem is made trivial by the
+presence of delivery receipts}. If Bob's device is online, it will
+immediately send a sealed-sender response back to Alice when her message
+is received, allowing the attacker to make epochs relatively short (a
+few seconds perhaps) and much more quickly narrow down Bob's associates.
+
+% There are several practical complications in performing this attack in practice.
+% First, because there is processing and network delay between the original message and
+% its corresponding delivery receipt, there will likely be other (sealed sender)
+% messages sent that are unrelated to Alice or Bob (e.g. messages to Charlie,
+% Dave, Eve, etc) during that time. An adversary trying to determine who is
+% messaging Bob will see messages to Alice, Charlie, Dave, Eve, etc. in a short
+% \emph{epoch} after seeing the message to Bob. This could potentially lead the adversary to
+% be unsure which of these messaged Bob originally. However, if Alice sends
+% \emph{multiple messages} to Bob, each one will elicit its own delivery receipt
+% to Alice. For instance, the adversary might observe a second message to Bob,
+% followed by messages to Alice, Fred, and George. If Alice is the only recipient
+% appearing in both \emph{epochs} following the messages to Bob, the adversary can
+% conclude that Alice sent those messages to Bob.
+
+
+%To carry out our attack, the adversary examines the users that received messages
+%and those that received a delivery receipt in each time period.
+%% The identification attack can be simply summarized as examining the intersection of users who received messages to those that received delivery receipts. 
+%%
+%Note that if the attacker is targeting Bob for observation, Bob's identity will
+%appear in the initial Sealed Sender message.  If, instead, the attacker is targeting
+%Alice, her identity will appear in the delivery receipt message.  Thus, both senders
+%and receivers can be targeted.
+%
+%%
+%Because the SEEMs we consider are used for active messaging, they feature the
+%quick, informational updates to which users have become accustomed.  For
+%instance, Bob's device will reply to a received message with a delivery receipt
+%as soon as his device processes the message.  Note that this happens \emph{even
+%if Bob has not read the message}, and therefore will happen very soon after the
+%Sealed Sender message is forwarded by the server, providing Bob's device is
+%online.  An additional acknowledgment will be sent to Alice once Bob opens the
+%app UI and reads the message.  As noted in Section \ref{sec:background}, we will
+%refer to these messages as delivery receipts and read receipts.
+%
+% These two additional messages sent to the message originator, Alice, are described here as the {\em delivery receipt} and the {\em read receipt}.
+%
+%
+
+
+
+% Not sure this is true - more messages without responses might actually make
+% linking harder? might make it easier, but not sure we did that analysis
+%While the attack we describe below functions with either delivery receipts or read receipts,
+%we focus our attention on delivery receipts because of the immediacy with which they are sent.
+%Additionally, read receipts can be turned-off in Signal, while delivery receipts cannot. 
+%If a communication channel has read receipts enabled, it would make the attack even more effective.  For simplicity, for the remainder of this section we just use the term ``receipt''
+%for delivery receipt.
+%
+
+
+%As described in Section~\ref{ssec:signal}, the metadata associated with a sealed sender message from Alice to Bob will not list Alice.  The receipts generated by Bob's device, along with future replies, will also be sealed sender, with no sender and only Alice as the recipient.  An observer can, therefore, only determine the destination of a message, but not its source.
+%
+% Additionally Bob's device will send its replies (receipts and future messages) in sealed sender messages back to Alice as well.
+%
+% Thus, in theory, an observer can only determine where messages are going but not from where they came.
+
+% However, as all sent messages are responded to by the receiver's device, in this case Bob, the
+% identity of the sender can be deduced over time.
+%
+% An observer (or the metadata stored at Signal) can track all the users that are receiving delivery and read receipts shortly after Bob received a message, which in turn are being sent back to Alice.
+%
+% This data contains the possible senders of the message Bob received.
+%
+
+%An adversarial service provider can, however, attempt to link these sealed
+%sender messages together, using timing data.  
+
+\subsection{(old) Attack Details}\todo{delete this subsection too}
+
+We now discuss our attack in more details, split into three variants in order to show how to overcome possible confounding factors.  In the first, most simple variant, a service provider computes set intersections of all users whose identities appear in an epoch in which Bob receives a message.  In the second variant, we note the reality that Alice may not appear in every epoch in which Bob receives a message, and develop a solution.  Finally, in the third variant, we note that there may be popular users that appear in {\em most} epochs and show how such users can be eliminated.
+
+
+\subsubsection{Attack Variant 1 --- Naive Single-source Attack}
+\label{sec:signal-attack1}
+The simplest attack strategy to identify an associate Alice in
+conversation with the target Bob is to use set intersections over
+multiple epochs. 
+% A simple first attack strategy to link Alice and Bob could therefore use simple
+% set intersections over multiple message epochs.
+Each time Bob receives a message, the
+service provider collects a list of users who received a message shortly
+after the initial message was delivered to Bob. Over multiple messages to Bob, the service
+provider can compute the intersection of these lists, until the true sender is
+the only remaining identity.
+
+This attack works under three rather restrictive assumptions:
+% Three assumptions:
+% Only Alice messaged Bob
+% Bob's device was online (should be known by Signal?)
+% Alice's message generates a receipt
+% This naive attack strategy assumes a simplified model of Signal use. In particular,
+% it only works if:
+\begin{enumerate}[nosep]
+\item \label[ass]{ass:bob-response}
+  Bob's device is online and will send a delivery receipt following
+  any message received;
+\item \label[ass]{ass:only-alice}
+  Alice is the only user messaging Bob;
+\item \label[ass]{ass:no-popular}
+  Any other user is unlikely to receive a message in a given target epoch.
+\end{enumerate}
+
+% For example, Alice may start typing a message to Bob and then
+% decide to not send the message. In this case Signal would observe two sealed
+% sender messages (start typing and stop typing) going to Bob and no messages (or
+% receipts) going to Alice. This would cause the attack above to determine that no
+% one is messaging Bob (or potentially identify an unrelated sender by coincidence).
+
+%Additionally, the above assumes that delivery and read receipts are identifiable
+%by the service provider. Examining Signal's source code, this is not the case;
+%all Signal messages (messages, receipts, and typing notifications) are padded to
+%a multiple of 160 bytes before encryption. This means that short messages,
+%receipts and events are indistinguishable. However our analysis did reveal that
+%Sealed Sender messages can be distinguished from regular Signal messages, as
+%they have a different length and lack a ``from'' field.
+
+While this first attack demonstrates the concept of being able to link users
+together, these assumptions make using this attack in practice cumbersome and
+prone to failure. We next examine two enhancements of the basic attack
+strategy that allow us to eliminate these assumptions.
+% We note that underlying these assumptions is one key
+% assumption: that each message to Bob will generate a response message to Alice.
+% This might not be true because someone else messaged Bob, Alice's message might
+% not elicit a response, or Bob's device might occasionally be offline.
+
+\subsubsection{Attack Variant 2 --- Tolerating noise}
+\label{sec:signal-attack2}
+
+If \cref{ass:bob-response} or \cref{ass:only-alice} are not true, then
+Alice may not actually appear in every epoch following a message to Bob,
+causing her to be eliminated from the set-intersection approach and the
+attack to fail.
+
+In particular, \cref{ass:bob-response} is invalid in the presence of
+\emph{typing notifications} (\cref{sssec:signal-typingNotifications}), which
+do not cause delivery (or read)
+receipts to be sent back to the sender. Typing messages are also difficult to
+distinguish from content messages at the server, as they are both effectively
+padded to the same length before encryption. When considering a network that may
+contain typing messages, the above attack strategy would lead to an empty
+intersection.
+
+To remove these first two unrealistic assumptions, we can modify the
+attack to no longer perform an intersection of
+the user lists, but instead maintain a \emph{counter} that tracks the number of
+messages each user has received in the epochs directly after a message to Bob.
+
+For each message sent to Bob, the adversary observes the recipients of messages
+sent shortly after (as in the simple strategy). A tally is kept of the number of times each
+recipient was the destination of a message in the epoch after the message to Bob.
+After several messages to Bob, the recipient that has the highest tally is the
+most likely sender to Bob.
+%Note that this attack also generalizes to Attack 1, where after $N$ messages to
+%Bob, Alice will have a tally of $N$.
+
+
+%We also note that unlike Attack 1, this attack will always identify the most likely
+%sender (or senders). We next analyze using simulation the success or
+%effectiveness of each of these attacks.
+
+% This strategy will still work with multiple senders to Bob, as well as Alice
+% sending response-less messages (e.g. typing notifications).
+% DR: Note, following not quite true. This limitation also present in
+% attack 1.
+% However, it introduces a new limitation: \textbf{unrelated popular users}. If a
+% user Charlie receives (or sends) messages in every epoch, Charlie's tally will
+% be the highest, making her appear as if she was messaging Bob, even if
+% she has never sent nor received a message to or from him.
+
+\subsubsection{Attack Variant 3 --- Handling Popular Users}
+\label{sec:signal-attack3}
+
+Even variant 2 still requires \cref{ass:no-popular} to hold, that
+any \emph{non-associates} are unlikely to appear in an epoch following a message to Bob.  Problematically, this assumption does not hold in the presence of a few
+``popular'' users on the system, who receive thousands of messages a
+day. Such users might appear in every target epoch, potentially more frequently than Alice, even
+though their communication has nothing to do with the attacker's target Bob.
+
+We can eliminate popular users by also sampling \emph{random epochs},
+periods of the same length but which do not follow any message to the
+target user Bob. Any non-associate --- even a very ``popular'' one ---
+should be equally likely to appear in random epochs as well as the
+normal \emph{target epochs} following messages sent to Bob, whereas any
+associates of Bob (such as Alice) will be more likely to appear in the
+target epochs.
+
+We therefore modify the tally procedure from the previous attack
+variant, by incrementing a user's tally for each target epoch in which
+they appear (as before), but also \emph{decrementing} the tally for each
+random epoch in which they appear. If the number of target and random
+epochs sampled is the same, then any non-associate's increments and
+decrements should eventually cancel out, leading to an expected tally of
+zero, while associates' tallies will keep increasing.
+
+Unless otherwise specified, our analysis in the next section refers to
+this variant of our attack only, which eliminates
+all \crefrange{ass:bob-response}{ass:no-popular}.
+
+% Because popular users send and receive lots of messages, they are
+% disproportionately likely to appear as a recipient in epochs following messages
+% to Bob. To filter out popular users, we first assume that they are equally
+% likely to appear in epochs involving messages to Bob as epochs not involving
+% Bob. In other words, we assume their messaging patterns are generally
+% uncorrelated with Bob's if they are not interacting with him.
+% 
+% Under that assumption, we can obtain a \emph{base rate} of appearance in epochs
+% in general, and using that rate as a threshold to compare against for
+% Bob-involved epochs. For instance, if Charlie appears in 25\% of epochs
+% generally, we would also expect her to appear as a recipient in about 25\% of
+% epochs following a message to Bob. Thus, unless she appeared in significantly
+% more than that, we can rule her out as a sender to Bob, even if she appears the
+% most frequently in epochs following a message to Bob.
+
+%\gsk{TODO Figure~TK} shows an overview of our attack from the adversarial service
+%provider's (Signal's) perspective.
+
+
+%Additionally, we increase the amount of messages in the message log each epoch
+%to address the added receipts and typing notifications that get sent. This
+%shifts the focus of the attack from being run until Alice is uniquely identified
+%as the sender, to creating a measure of confidence in who the sender is.
+
+
+\fi
+
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: "main"
+%%% End:

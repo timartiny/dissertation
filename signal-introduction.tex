@@ -1,0 +1,235 @@
+\section{Introduction} % basic introduction, problem statement etc
+
+Secure end-to-end encrypted messaging applications, such as Signal,
+protect the content of messages between users from potential eavesdroppers using
+protocols like off-the-record (OTR) messaging \cite{BGB04,
+DiRaimondo:2005:SOM:1102199.1102216}. These protocols guarantee that even the
+service provider itself is unable to read communication between users. However,
+these protocols do not protect conversation \emph{metadata}, including sender,
+recipient, and timing.  For instance, if Alice sends a message to Bob, the
+server will learn that there is a relationship between those two users and when
+they communicated.
+
+\medskip
+\noindent
+\textbf{Protecting metadata.} While leaking metadata may appear reasonable when compared to revealing the contents of the messages,
+observing metadata can have serious consequences. Consider that Alice may be a whistleblower communicating with a journalist
+\cite{190976} or a survivor of domestic abuse seeking confidential support
+\cite{236244}. In these cases, merely knowing \emph{to whom} Alice is communicating combined with other contextual information is often enough to infer
+conversation content without reading the messages themselves. Former NSA and CIA director Michael Hayden succinctly illustrated this importance of metadata when he said the US government ``kill[s] people based on metadata'' \cite{haydenmetadata}.
+
+% In fact, Paul
+% Revere's revolutionary tendencies can be identified from the metadata of what
+% organizations he and other colonists were members of~\cite{healy_2013}.
+
+Signal's recent \emph{sealed
+sender} feature aims to conceal this metadata by hiding the message sender's identity.
+Instead of seeing a message from Alice to
+Bob, Signal instead observes a message to Bob from an anonymous sender. This message
+can only be decrypted by Bob, who then learns from the payload that the message
+originated with Alice. Ideally, using the sealed sender protocol breaks the link
+between the sender and the receiver, preventing Signal from recording 
+sender-recipient pairs, if ever compromised or compelled to do so.
+
+While sealed sender is currently only deployed by Signal, Signal's design decisions
+are highly influential for other secure messaging platforms as it is a leader in 
+deploying cutting-edge secure messaging features; the Signal protocol has 
+been integrated into other services like WhatsApp.  Understanding and  uncovering flaws
+in sealed sender is therefore not only important to protecting the privacy of Signal's
+millions\footnote{Signal does not publicly disclose its user count, but the app has been downloaded millions of times.}
+ of users \cite{signalusercount}, but also helps make sure sealed sender fully realizes
+its goal before it is integrated into other services with other sets of users.
+%and even with
+%While Signal still learns some metadata about the information, having only a recipient
+%makes interpreting this message, even with other contextual information,
+%significantly more difficult.
+
+\medskip
+\noindent
+\textbf{A new SDA on message timings.}
+We present a new statistical disclosure attack (SDA) applicable to messages in Signal's sealed sender, that
+would allow the Signal service---if compelled by a government or compromised---to correlate
+senders and receivers even when using the sealed sender feature.
+Previously,
+\emph{statistical disclosure
+attacks} (SDAs) have been studied since the 2000s to
+link senders and recipients in anonymous mix
+networks~\cite{SDA,SDA-MD05,LSDA,two-sided-SDA,reverse-SDA}.
+%infer information about sender-recipient correlations after viewing a large volume of
+%traffic in and out of a mix network (\cite{SDA,SDA-MD05,LSDA}).
+These attacks work by correlating sender and receiver behavior across multiple rounds of the mix.
+
+
+It is not immediately obvious how SDAs could be applied in the context
+of sealed sender messages, since there is no mix network and the identities of
+senders are (by design) never revealed. Thus, it is not clear how even the server
+could apply SDA attacks, since it only learns the destinations of messages, and
+never sources.
+
+%In traditional (encrypted) messaging without sealed sender, SDAs have no
+%relevance since the sender/recipient identities are already revealed to
+%the server. But in the presence of sealed sender, it is not obvious how
+%such attacks could be applied, since there is no mix network and the
+%identities of parties sending messages at any moment are (by design) not
+%revealed to the server.
+
+In this paper, we observe that, \emph{by assuming that most messages
+receive a quick response}, we can overcome these seeming limitations of
+sealed-sender messaging and employ a SDA-style attack to
+de-anonymize sender-recipient pairs after passively observing enough messages.
+%(Note, a similar assumption, in the context of mix
+%networks, was used by \cite{two-sided-SDA,reverse-SDA}.)
+
+Moreover, and crucially, \emph{this quick-response assumption is guaranteed to be true
+in the presence of delivery receipts}, a feature of Signal's
+current implementation that cannot be disabled by the user.
+When Alice sends Bob a sealed sender message, Bob's device will
+automatically generate a delivery receipt that acknowledges Alice's message. Although
+this delivery receipt is also sent via sealed sender to Alice, the predictability of its timing makes our attack more effective.
+
+The differences between sealed sender messaging and a general mix network allow
+us to develop a simple, tailored SDA-style attack, using ideas similar to
+\cite{SDA-MD05},
+which can be used to de-anonymize a conversation between two parties.
+Compared to prior work, our attack is more limited in scope, but is also
+more efficient: it runs in linear-time in the amount of traffic
+observed, and we prove that the probability our attack succeeds increases exponentially with the number of observations.
+
+%derive a simple, exponentially-decreasing lower
+%bound on the probability of de-anonymizing the conversation as a function of the number of
+%observations.
+
+\if0
+We also validate our attack with simulations,
+demonstrating that under reasonable circumstances, a conversation can be
+de-anonymized in fewer than 60 observations.
+
+\medskip
+\noindent
+\textbf{A new timing attack.\todo{remove this part}} In this paper, we show that there exists a novel timing attack on Signal's sealed sender protocol that allows a network observer to efficiently identify the pairs of users that are communicating. This demonstrates that sender anonymity of sealed sender does not compose over a conversation of multiple messages back and forth.
+%with back and forth communication, even if both parties are using sealed sender. This is due to a novel timing attack.
+
+Our key observation is that while Signal only sees the recipient of sealed sender 
+messages, the timestamps of these messages still leak critical information.  As Alice 
+and Bob continue a conversation (beyond the initial message), the timing information can be enough to link Alice to Bob, even if both parties are using sealed sender.  That is, an observer can learn that Alice engaged (and initiated) a conversation with Bob with high confidence. 
+
+
+The timing attack is made worse by Signal's default setting of delivery receipts. When Alice sends Bob a sealed sender message, Bob's device will
+automatically generate a delivery receipt that acknowledges Alice's message. Although
+this delivery receipt is also sent via sealed sender to Alice, the predictability of its timing makes our attack more effective.
+\fi
+
+\medskip
+We validate the practicality of the timing attack in two ways. First,
+using a probabilistic model of communication, we prove a bound on
+the probability that Alice can be identified as communicating with Bob
+after a finite number of messages, independent of other users' activity.
+The probability also scales logarithmically with the number of active users.
+
+Second, we run simulations to estimate the effectiveness of the attack in practice. In the most basic simulation, Alice can be uniquely identified as communicating with Bob after fewer than 10 messages. We also add complicating factors such as
+multiple simultaneous conversations with Alice and/or Bob and
+high-frequency users in the system, and show that these delay but do not
+prevent Alice from being de-anonymized.
+% simulation. We show that even with significant
+% other sealed sender activity on the network, given enough message pairs, Signal is able
+% to uniquely identify Alice and Bob. The activity on the network, such as highly popular users communicating frequently with multiple partners, increased the burden on the attacker, but only delays the reidentification  attack. We estimate, that only a few dozen sealed sender messages, is sufficient in most settings to identify communicating parties. \adam{this paragraph needs to be updated with new simulation results}
+
+
+% This will appear as a sealed sender message to Bob, followed shortly by a sealed sender message to Alice. If these two messages can be linked together,
+% Signal will learn that Alice and Bob are communicating.
+
+
+
+\medskip
+\noindent
+\textbf{Sealed sender conversations.} To fix this problem, we
+provide a series of practical solutions that require only modest changes to Signal's
+existing protocol.
+We first define a simulation-based security model for sealed sender \emph{conversations}
+(rather than just single messages) that allows the original recipient of the
+sealed sender message to be leaked but never the initiator of that message
+(sender)
+through the lifetime of the conversation. We then present three solutions that
+accomplish the goal of sealed sender conversations. Each is based on ephemeral
+identities, as opposed to communicating with long-term identifiers, such as the keys linked to your phone number in Signal. Each additional solution provides additional security protections.
+
+Our first solution provably provides {\em one-way sealed-sender} conversations, a new security guarantee for which we provide a formal, simulation based definition. In this protocol, Alice %, a sender wishing to remain anonymous,
+initiates a sealed-sender conversation by generating a new ephemeral, public/secret key and anonymously registers the ephemeral public key with an anonymous mailbox via the service provider. Alice then uses a normal sealed sender message to the receiver Bob to send the anonymous mailbox identifier for his replies.  Alice can retrieve Bob's replies sent to that anonymous mailbox by authenticating with her ephemeral secret key,
+and the conversation continues using traditional sealed sender messages between Bob's long-term identity and the anonymous mailbox Alice opened.
+%and further communication within the conversation from Alice to Bob uses traditional sealed sender, but all replies from Bob to Alice is sent via the anonymous mailbox.
+
+We show that this solution can be further enhanced if both Alice and Bob use ephemeral identities, after the initial message is sent (using sealed sender) to Bob's long-term identity.
+% This solution can then extended for {\em two-way sealed-sender} communication. As before, Alice registers an anonymous mailbox and send the mailbox identifier to Bob using a sealed-sender message.  Then, {\em Bob} also registers an anonymous mailbox upon receiving the initiation message. Bob replies to Alice's initial message via a sealed sender message to Alice's anonymous mailbox, and within the envelope is the address of Bob's anonymous mailbox. Further communication between the parties continues via sealed sender message to each other's anonymous mailbox.
+This protocol provides both sender and receiver anonymity for the length of a conversation if the server is unable to correlate Bob's receipt of the initial message and his anonymous opening of a new mailbox, meaning the server has only one chance to deanonymize Bob.    Importantly, even if the server is able to link these two events, this extension still (provably) provides {\em one-way sealed-sender}.
+
+Neither of the above solutions offer authentication of anonymous mailboxes at
+the service provider, e.g., Signal.  A malicious user could open large numbers
+of anonymous mailboxes and degrade the entire system.
+% Because any user may open any number of anonymous mailboxes, this could
+% degrading service, particularly if there are malicious users.
+We offer an overlay solution of {\em blind-authenticated anonymous mailboxes}
+for either one-way or two-way sealed-sender conversations whereby each user is
+issued anonymous credentials regularly (e.g., daily) that can be ``spent''
+(verified anonymously via a blind signatures) to open anonymous new mailboxes.
+To evaluate the practicality of using anonymous credentials in this way, we run
+a series of tests to compute the resource overhead required to run this overlay.
+We estimate that running such a scheme on AWS would cost Signal approximately
+\$40 each month to support 10 million anonymous mailboxes per day.
+
+
+
+% However, we acknowledge that this solution would still require a
+% significant engineering effort to fully integrate with the Signal
+% protocol. To that end, we also discuss a number of simple strategies
+% which could be deployed immediately in order to largely prevent the
+% attacks we have demonstrated.
+
+\medskip
+\noindent
+\textbf{Our contributions.} In this paper, we will demonstrate
+\begin{itemize}[nosep]
+  \item A brief analysis of how the Signal protocol sends messages and
+    notifications based on source code review and instrumentation
+    (\cref{sec:signal-message-types});
+  \item The first attack on sealed sender to de-anonymize the initiator of a conversation in Signal (\cref{sec:signal-attack});
+  \item Validation of the attack via theoretical bounds and simulation models (\cref{sec:signal-attack-eval});
+  \item A new security model that defines allowed leakage for sender-anonymous communication;
+  \item A set of increasingly secure solutions, that are either one-way anonymous, two-way anonymous, and/or provide anonymous abuse protections. (\cref{sec:signal-solution});
+  \item An evaluation of the resource overhead introduced by using blind signatures to prevent anonymous mailbox abuse, and estimates of its
+    effective scalability to millions of users (\cref{sec:signal-impl}); and
+  \item Immediate stopgap strategies for Signal users to increase the difficulty of our attack (\cref{sec:signal-othersolutions}).
+\end{itemize}
+\vspace{4pt}
+
+We include related work and the relevant citations in \cref{sec:signal-related_work}.  We also want to be clear about the limitations of our work and its implications:
+\begin{itemize}[nosep]
+  \item We do \emph{not} consider network metadata such as leakage due
+    to IP addresses. See \cref{sec:signal-threat} and the large body of existing
+    work on anonymizing proxies such as Tor.
+  \item We do \emph{not} consider messaging with more than two parties,
+    i.e.\ group messaging. This is important future work; see the
+    discussion in \cref{sec:signal-group}.
+  \item Our attack does \emph{not} suggest that Signal is less secure
+    than alternatives, or recommend that users discontinue using it.
+    Other messaging services do not even attempt to hide
+%     Indeed, our attacks would apply to other messaging services but are
+%     most relevant to the Signal protocol as it actually attempts to hide
+    the identities of message senders.
+  \item We do \emph{not} believe or suggest that Signal or anyone else is using this attack
+          currently.
+  \item While we have implemented the core idea of our solution in order
+    to estimate the cost of wider deployment, we have \emph{not}
+    undergone the serious engineering effort to carefully and correctly integrate this
+    solution with the existing Signal protocol software in order to
+    allow for practical, widespread deployment.
+\end{itemize}
+\vspace{4pt}
+
+\noindent
+\textbf{Responsible Disclosure.} We have notified Signal of our attack and solutions prior to publication, and Signal has acknowledged our disclosure.
+%Simultaneously with the submission of this manuscript, we have responsibly disclosed this attack to Signal.
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: "main"
+%%% End:

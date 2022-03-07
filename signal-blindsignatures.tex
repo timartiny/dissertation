@@ -1,0 +1,39 @@
+\medskip \noindent
+\textbf{Blind Signatures}
+The mechanism to prevent abuse for the creation of anonymous accounts relies on the 
+cryptographic primitive of \emph{blind signatures}, as first proposed by
+\cite{C:Chaum82}. Blind signature schemes
+have 5 algorithms: \bskeygen, \bsblind, \bssign, \bsextract and \bsverify.  
+\bsblind takes in the public key of the signer, a message, and some randomness and
+outputs a blinded message.% and a blinding factor.
+\ \bssign takes in
+the signer's private key and a blinded message and outputs a 
+blinded signature.  \bsextract takes in
+%the blinding factor produced by \bsblind and
+a blinded signature and the randomness used in blinding and outputs a normal 
+signature.  Finally, \bsverify takes in a message and the 
+signer's public key and decides if the signature is valid.
+
+% following steps between a client (message generator) and server
+% (signer).
+
+The interaction between a server with the signing keypair $sk, pk$ and a client is as follows:
+\begin{enumerate}[noitemsep]
+  \item Client generates the blinded message % and blinding factor $(b, bf)
+  \\ $b \gets \bsblind(m, pk;r)$ for $r \sample \bin^\securityparameter$
+  \item Client sends $b$ to the server for signing.
+  \item Server computes the blinded signature 
+  \\ $s_{blind} \gets \bssign(b,sk)$ and returns it to the client.
+  \item Client extracts the real signature % $s = \bsextract(s_{blind}, bf, pk)$
+  \\ $s \gets \bsextract(s_{blind}, pk; r)$
+  \item Client, in a different network connection, sends the initial message $m$ and the real signature $s$ to the server, who runs $\bsverify(pk,m,s)$ 
+\end{enumerate}
+The blind signature scheme should have the usual signature
+unforgeability property.  Additionally, it should be impossible for a
+server to link the blinded message and blinded signature to the real
+message and real signature.  We use the RSA-based construction of blind
+signatures from \cite{C:Chaum82}.
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: "main"
+%%% End:
