@@ -1,0 +1,54 @@
+\chapter{Introduction}
+
+A \emph{Centralized System} is one in which a the core functionality of the
+system is dictated by a single body that single-handedly determines the use and
+behavior of the system. Any privacy guarantees are at the sole discretion of the
+system.
+
+Users of Centralized Systems have no inherent guarantee of \emph{privacy} of
+their data. How their data is collected and used is at the sole discretion of
+the service. Services often offer vague claims as to their privacy guarantees
+for users.
+
+This thesis presents multiple avenues of research providing mechanisms for
+Centralized Systems to offer services built on privacy. These services are built
+upon privacy proofs which guarantee they limit information shared between users
+and the services and have the smallest possible surface area allowing these
+Centralized Systems to provably guarantee their services are fully enabling user
+privacy.
+
+In order to develop these tools which guarantee user privacy there must be a
+basis of what information is necessary for a service to function as well as how
+potential bad acting Centralized Systems abuse the service they offer to
+restrict access to the content of the service they offer.
+
+\section{Content Provider Censorship}
+Basically the intro of poc
+
+\section{Metadata Privacy}
+Basically the intro to signal
+
+\section{Measurement of censorship in existing systems}
+Basically the intro to Mind the IP Gap
+
+\section{Rest of this Thesis}
+In this thesis we provide three projects geared towards enhancing Privacy in
+Centralized Systems:
+
+\begin{enumerate}
+    \item Proof of Censorship --- We showcase content provider censorship and
+    how a service dedicated to not censoring its users can implement a service
+    with privacy guarantees that users content will not be removed or altered by
+    the service.
+    \item Improving Signal's Sealed Sender --- We build on Signal's Sealed
+    Sender which promises its users the privacy of not knowing which user is
+    messaging which users but ultimately is vulnerable to a simple Statistical
+    Disclosure Attack allowing Signal (if compelled or malicious) to determine
+    who a user is messaging. This work provides a provably private mechanism to
+    ensure any centralized messaging service can offer its service without
+    learning metadata information about which users are messaging each other.
+    \item Mind the IP Gap --- We measure how countries censor access to the
+    internet through DNS resolution over the IPv4 and IPv6 internet allowing
+    future work to implement systems allow censored citizens to circumvent
+    countries DNS censorship techniques.
+\end{enumerate}
