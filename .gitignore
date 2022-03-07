@@ -1,0 +1,10 @@
+ThesisFilePkg*
+*.aux
+*.bbl
+*.blg
+*.lof
+*.log
+*.lot
+*.out
+thesis.pdf
+*.toc
