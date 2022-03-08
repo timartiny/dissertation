@@ -1,29 +1,67 @@
 \chapter{Introduction}
 
-A \emph{Centralized System} is one in which a the core functionality of the
+A \emph{Centralized System} is one in which the core functionality of the
 system is dictated by a single body that single-handedly determines the use and
 behavior of the system. Any privacy guarantees are at the sole discretion of the
 system.
 
-Users of Centralized Systems have no inherent guarantee of \emph{privacy} of
+Users of Centralized Systems have no inherent guarantee of \emph{privacy} for 
 their data. How their data is collected and used is at the sole discretion of
 the service. Services often offer vague claims as to their privacy guarantees
 for users.
 
 This thesis presents multiple avenues of research providing mechanisms for
-Centralized Systems to offer services built on privacy. These services are built
-upon privacy proofs which guarantee they limit information shared between users
-and the services and have the smallest possible surface area allowing these
-Centralized Systems to provably guarantee their services are fully enabling user
-privacy.
+Centralized Systems to offer services with guaranteed privacy. These services
+are built upon privacy proofs which guarantee they limit information shared
+between users and the services and have the smallest possible surface area
+allowing these Centralized Systems to provably guarantee their services are
+fully enabling user privacy.
 
 In order to develop these tools which guarantee user privacy there must be a
 basis of what information is necessary for a service to function as well as how
 potential bad acting Centralized Systems abuse the service they offer to
-restrict access to the content of the service they offer.
+restrict access to the content they offer.
+
+The concept of user privacy is inherently linked to the concept of service
+provider censorship. A service with no user privacy can censor a users access to
+content through that lack of privacy. By guaranteeing user privacy we restrict
+the possibility of a service censoring content to users. We delve into more
+details on this now.
 
 \section{Content Provider Censorship}
-Basically the intro of poc
+Online censorship is done in many ways. In addition to blocking access to
+websites, censors also use legal means to remove information from content
+providers directly, such as through laws like the DMCA~\cite{dmca} in the United
+States. In the second half of 2016, Twitter received over 5,000 removal requests
+from government and police agencies worldwide, and complied with 19\% of
+them~\cite{twitter-transparency}. In one example from August 2016, Twitter
+complied with a Brazilian government request to remove a tweet comparing
+then-mayoral candidate Rafael Greca to a fictional villain from the 1992 film
+Batman Returns~\cite{twitter-rafael-greca}.
+% https://www.lumendatabase.org/notices/12866354
+
+Services can be compelled (politically or financially) to censor content for
+some subset of users which makes the censorship less overt: the content is
+available for some users but not others. 
+
+Enhancing user privacy can enable censorship-resistant content providers to not
+censor content. A service that is unaware of the content being requested cannot
+censor access solely to that content. This is the framework of the work
+presented in \Cref{ch:poc}: \emph{Proof of Censorship: Enabling centralized
+censorship-resistant content providers}.
+
+Using Private Information Retrieval (PIR) a content provider is unaware of the
+content a user is requesting thereby inhibiting its ability to censor access to
+a subset of content. The provider must censor access to the service as a whole
+or not at all.
+
+\emph{Proof of Censorship} extends this functionality by guaranteeing the
+content has not been modified by providing a proof the content has not been
+modified since upload time.
+
+This further enables services to purposely remove content against its policies,
+users receive proof that the content has been removed (or modified) that the
+service can publicly announce.
 
 \section{Metadata Privacy}
 Basically the intro to signal
@@ -31,7 +69,7 @@ Basically the intro to signal
 \section{Measurement of censorship in existing systems}
 Basically the intro to Mind the IP Gap
 
-\section{Rest of this Thesis}
+\section{Thesis Structure}
 In this thesis we provide three projects geared towards enhancing Privacy in
 Centralized Systems:
 
