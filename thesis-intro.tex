@@ -56,15 +56,49 @@ a subset of content. The provider must censor access to the service as a whole
 or not at all.
 
 \emph{Proof of Censorship} extends this functionality by guaranteeing the
-content has not been modified by providing a proof the content has not been
-modified since upload time.
+content has not been modified by providing a cryptographic proof the content has
+not been modified since upload time.
 
 This further enables services to purposely remove content against its policies,
 users receive proof that the content has been removed (or modified) that the
 service can publicly announce.
 
 \section{Metadata Privacy}
-Basically the intro to signal
+While leaking metadata may appear reasonable when compared to revealing the
+contents of the messages, observing metadata can have serious consequences.
+Consider that Alice may be a whistleblower communicating with a journalist
+\cite{190976} or a survivor of domestic abuse seeking confidential support
+\cite{236244}. In these cases, merely knowing \emph{to whom} Alice is
+communicating combined with other contextual information is often enough to
+infer conversation content without reading the messages themselves. Former NSA
+and CIA director Michael Hayden succinctly illustrated this importance of
+metadata when he said the US government ``kill[s] people based on metadata''
+\cite{haydenmetadata}.
+
+In 2018 Signal, a secure end-to-end encrypted messenger, introduced Sealed
+Sender\cite{sealed-sender}, a protocol that obscures the metadata associated
+with encrypted messages by moving the ``From'' field of messages inside the
+encrypted content, creating One-Way Anonymous messages.
+
+On the whole this vastly increases the privacy of users of Signal. Clients using
+Sealed Sender become private from an honest Signal service, as on the outside of
+the ``encrypted envelope'' there is no notion of which Signal user is sending
+messages.
+
+In \Cref{ch:signal}: \emph{Improving Signal's Sealed Sender} we demonstrate that
+the Sealed Sender protocol is vulnerable to a Statistical Disclosure Attack
+(SDA), which would allow a malicious or compelled Signal (or other secure
+end-to-end encrypted messengers that implement Sealed Sender) to link these
+One-Way Anonymous messages due in part to delivery receipts: a feature of most
+online messengers which immediately alert a user when their message has been
+delivered.
+
+We further develop a more private protocol by formalizing Sealed Sender
+\emph{conversations} and decoupling a user's long term identity (such as Alice)
+from the destination of messages, thereby creating a provably private One-Way
+Anonymous message. We extend this framework to Two-Way Anonymous messages where
+the messaging service need not know either the sender nor the receiver of a
+message. 
 
 \section{Measurement of censorship in existing systems}
 Basically the intro to Mind the IP Gap
