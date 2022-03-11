@@ -10,12 +10,12 @@ their data. How their data is collected and used is at the sole discretion of
 the service. Services often offer vague claims as to their privacy guarantees
 for users.
 
-This thesis presents multiple avenues of research providing mechanisms for
-Centralized Systems to offer services with guaranteed privacy. These services
-are built upon privacy proofs which guarantee they limit information shared
-between users and the services and have the smallest possible surface area
-allowing these Centralized Systems to provably guarantee their services are
-fully enabling user privacy.
+I present here multiple avenues of research providing mechanisms for Centralized
+Systems to offer services with guaranteed privacy. These services are built upon
+privacy proofs which guarantee they limit information shared between users and
+the services and have the smallest possible surface area allowing these
+Centralized Systems to provably guarantee their services are fully enabling user
+privacy.
 
 In order to develop these tools which guarantee user privacy there must be a
 basis of what information is necessary for a service to function as well as how
@@ -27,6 +27,21 @@ provider censorship. A service with no user privacy can censor a users access to
 content through that lack of privacy. By guaranteeing user privacy we restrict
 the possibility of a service censoring content to users. We delve into more
 details on this now.
+
+This dissertation showcases three topics of enhancing user privacy in
+centralized systems examining three different avenues of censorship. First we
+examine content provider censorship, where a service that provides access to
+content censors that access. I present a solution to this problem applicable for
+content providers that which to demonstrate their commitment to user privacy.
+Second we consider metadata based censorship, where a service provider might
+censor access to content not based on the content itself but based on the
+metadata around that content such as who a message is sent from. I submit a
+provably private method to achieve privacy around the metadata associated with
+end-to-end encrypted messages, strengthening Sealed Sender, a technology geared
+towards privacy that is vulnerable to a simple Statistical Disclosure Attack.
+Finally we look at a measurement study of DNS censorship over IPv6 to learn how
+countries censor access to content differently over IPv6 compared to IPv4
+motivating avenues of censorship circumvention.
 
 \section{Content Provider Censorship}
 Online censorship is done in many ways. In addition to blocking access to
@@ -101,7 +116,47 @@ the messaging service need not know either the sender nor the receiver of a
 message. 
 
 \section{Measurement of censorship in existing systems}
-Basically the intro to Mind the IP Gap
+A key component of user privacy is users being able to access content they
+request. When a service provider censors the content its users are able to
+access the users privacy is inherently reduced. A main component of enhancing
+user privacy in any system is ensuring that system functions correctly for all
+users and does not censor access to content.
+
+Numerous technologies have been developed to circumvent existing censorship
+infrastructures. These technologies are built upon a fundamental understanding
+of the censorship apparatus they are working to circumvent. 
+
+Internet censorship is a global problem that affects over half the world's
+population. Censors rely on sophisticated network middleboxes to inspect and
+block traffic. A core component of Internet censorship is DNS blocking, and
+prior work has extensively studied how DNS censorship occurs, both for specific
+countries~\cite{Anonymous2020:TripletCensors,USESEC21:GFWatch} and
+globally~\cite{kuhrer2015going,dagon2008corrupted,pearce2017global,scott2016satellite}.
+
+In order to aid the development of future tools geared towards circumventing
+country wide censorship, I've worked to measure how countries have adopted IPv6
+infrastructure into their censorship apparatus.
+
+IPv6 is becoming more widely deployed, with nearly 35\% of current Internet
+traffic being served over native IPv6 connections~\cite{Google-IPv6}. It may
+appear that censors fall into a bifurcation of either censoring over IPv6 or
+not, but in practice we see that is not the case, we find a large range of how
+well censors block DNS requests over IPv6 compared to IPv4.
+
+By studying censorship in IPv6 we create opportunities for censorship tool
+development to exploit the censorship techniques used by individual countries,
+allowing citizens access to content they would not otherwise be able to reach.
+
+In \Cref{ch:v4vsv6}: \emph{Mind the IP Gap: Measuring the impact of IPv6 on DNS
+censorship} I present the results of our measurement of IPv6 DNS censorship
+compared to IPv4. We find that censors show a clear bias towards censoring in
+IPv4, and towards censoring native records (\texttt{A} records in IPv4 and
+\texttt{AAAA} records in IPv6). We break down differences at the country level
+statistically significant differences we discover by resolver and domain. We
+find that Thailand, Myanmar, Bangladesh, Pakistan, and Iran all present
+significant and consistent discrepancies across all resolvers and domains
+suggesting avenues for successful censorship circumvention opportunities in
+those countries.
 
 \section{Thesis Structure}
 In this thesis we provide three projects geared towards enhancing Privacy in
