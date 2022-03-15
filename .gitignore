@@ -8,3 +8,4 @@ ThesisFilePkg*
 *.out
 thesis.pdf
 *.toc
+.~*
