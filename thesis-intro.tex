@@ -136,16 +136,6 @@ messages where the messaging service need not know either the sender nor the
 receiver of a message. 
 
 \section{Measurement of censorship in existing systems}
-A key component of user privacy is users being able to access content they
-request. When a service provider censors the content its users are able to
-access the users privacy is inherently reduced. A main component of enhancing
-user privacy in any system is ensuring that system functions correctly for all
-users and does not censor access to content.
-
-Numerous technologies have been developed to circumvent existing censorship
-infrastructures. These technologies are built upon a fundamental understanding
-of the censorship apparatus they are working to circumvent. 
-
 Internet censorship is a global problem that affects over half the world's
 population. Censors rely on sophisticated network middleboxes to inspect and
 block traffic. A core component of Internet censorship is DNS blocking, and
@@ -153,9 +143,13 @@ prior work has extensively studied how DNS censorship occurs, both for specific
 countries~\cite{Anonymous2020:TripletCensors,USESEC21:GFWatch} and
 globally~\cite{kuhrer2015going,dagon2008corrupted,pearce2017global,scott2016satellite}.
 
-In order to aid the development of future tools geared towards circumventing
-country wide censorship, I've worked to measure how countries have adopted IPv6
-infrastructure into their censorship apparatus.
+Nation-state level censorship systems function as centralized systems. Similar
+to global services that have many servers located across the world, a
+nation-state censorship system may have many middleboxes distributed across
+their region to perform censorship, but the policies they follow on the whole
+are centralized and limit the autonomy of the users in those countries.
+\Cref{ch:v4vsv6}: \emph{Mind the IP Gap: Measuring the impact of IPv6 on DNS
+censorship} works to study centralized censorship systems globally. 
 
 IPv6 is becoming more widely deployed, with nearly 35\% of current Internet
 traffic being served over native IPv6 connections~\cite{Google-IPv6}. It may
@@ -179,23 +173,23 @@ suggesting avenues for successful censorship circumvention opportunities in
 those countries.
 
 \section{Thesis Structure}
-In this thesis we provide three projects geared towards enhancing Privacy in
-Centralized Systems:
+In this thesis I provide three projects geared towards enhancing privacy in
+centralized systems:
 
 \begin{enumerate}
-    \item Proof of Censorship --- We showcase content provider censorship and
-    how a service dedicated to not censoring its users can implement a service
-    with privacy guarantees that users content will not be removed or altered by
-    the service.
-    \item Improving Signal's Sealed Sender --- We build on Signal's Sealed
-    Sender which promises its users the privacy of not knowing which user is
-    messaging which users but ultimately is vulnerable to a simple Statistical
-    Disclosure Attack allowing Signal (if compelled or malicious) to determine
-    who a user is messaging. This work provides a provably private mechanism to
-    ensure any centralized messaging service can offer its service without
-    learning metadata information about which users are messaging each other.
-    \item Mind the IP Gap --- We measure how countries censor access to the
-    internet through DNS resolution over the IPv4 and IPv6 internet allowing
-    future work to implement systems allow censored citizens to circumvent
-    countries DNS censorship techniques.
+    \item Proof of Censorship --- this work showcases content provider
+    censorship and how a service dedicated to being transparent about content it
+    modifies or removes can implement a service which provides cryptographic
+    promises that content has not been censored.
+    \item Improving Signal's Sealed Sender --- Signal's Sealed Sender provided a
+    first step towards user privacy but ultimately is vulnerable to a simple
+    Statistical Disclosure Attack allowing Signal (if compelled or malicious) to
+    determine who a user is messaging. This work provides a cryptographically
+    private mechanism to ensure any centralized messaging service can offer its
+    service without learning metadata information about which users are
+    messaging each other.
+    \item Mind the IP Gap --- this work measures how countries' centralized
+    censorship systems block access to the internet through DNS resolution over
+    the IPv4 and IPv6 internet allowing future work to implement systems allow
+    censored citizens to circumvent countries DNS censorship techniques.
 \end{enumerate}
