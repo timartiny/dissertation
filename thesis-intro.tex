@@ -59,26 +59,25 @@ censor access to content differently over IPv6 compared to IPv4 motivating
 avenues of censorship circumvention.
 
 \section{Content Provider Censorship}
-Online censorship is done in many ways. In addition to blocking access to
-websites, censors also use legal means to remove information from content
-providers directly, such as through laws like the DMCA~\cite{dmca} in the United
-States. In the second half of 2016, Twitter received over 5,000 removal requests
-from government and police agencies worldwide, and complied with 19\% of
+In 2016, Twitter received over 11,000 removal requests from government and
+police agencies worldwide, and complied with 33\% of
 them~\cite{twitter-transparency}. In one example from August 2016, Twitter
 complied with a Brazilian government request to remove a tweet comparing
 then-mayoral candidate Rafael Greca to a fictional villain from the 1992 film
-Batman Returns~\cite{twitter-rafael-greca}.
+Batman Returns~\cite{twitter-rafael-greca}. Between May 6 and May 19, 2021
+Facebook removed nearly 500 pro-Palestine posts without any public
+explanation~\cite{fb-palestine}.
 % https://www.lumendatabase.org/notices/12866354
 
 Services can be compelled (politically or financially) to censor content for
 some subset of users which makes the censorship less overt: the content is
-available for some users but not others. 
+available for some users but not others. Can centralized systems be designed to
+ensure they are transparent and auditable in terms of the content they remove?
 
-Enhancing user privacy can enable censorship-resistant content providers to not
-censor content. A service that is unaware of the content being requested cannot
-censor access solely to that content. This is the framework of the work
-presented in \Cref{ch:poc}: \emph{Proof of Censorship: Enabling centralized
-censorship-resistant content providers}.
+\Cref{ch:poc}: \emph{Proof of Censorship: Enabling centralized
+censorship-resistant content providers} answers this question affirmatively.
+Content providers can be inherently auditable in order to be held accountable to
+the content they remove access to.
 
 Using Private Information Retrieval (PIR) a content provider is unaware of the
 content a user is requesting thereby inhibiting its ability to censor access to
@@ -94,6 +93,18 @@ users receive proof that the content has been removed (or modified) that the
 service can publicly announce.
 
 \section{Metadata Privacy}
+In addition to the content that users provide to services they also inherently
+provide metadata associated with their content. Metadata is generally only
+loosely based on the content it is related to. In the context of secure
+end-to-end-encrypted messengers, such as Signal, the content of messages is
+completely hidden from Signal and any other man in the middle. However, there is
+metadata associated with encrypted messages, e.g., the sender and receiver of
+the message, the time the message was sent, and in a more granular fashion, the
+size of the message. Even centralized services that aim to protect content using
+end-to-end encryption may receive sensitive metadata. For example, encrypted
+messaging apps' servers might learn who is communicating, even if the content is
+protected.
+
 While leaking metadata may appear reasonable when compared to revealing the
 contents of the messages, observing metadata can have serious consequences.
 Consider that Alice may be a whistleblower communicating with a journalist
@@ -106,16 +117,10 @@ metadata when he said the US government ``kill[s] people based on metadata''
 \cite{haydenmetadata}.
 
 In 2018 Signal, a secure end-to-end encrypted messenger, introduced Sealed
-Sender\cite{sealed-sender}, a protocol that obscures the metadata associated
-with encrypted messages by moving the ``From'' field of messages inside the
-encrypted content, creating One-Way Anonymous messages.
+Sender\cite{sealed-sender}, a protocol that provides a step in the correct
+direction towards hiding metadata. 
 
-On the whole this vastly increases the privacy of users of Signal. Clients using
-Sealed Sender become private from an honest Signal service, as on the outside of
-the ``encrypted envelope'' there is no notion of which Signal user is sending
-messages.
-
-In \Cref{ch:signal}: \emph{Improving Signal's Sealed Sender} we demonstrate that
+In \Cref{ch:signal}: \emph{Improving Signal's Sealed Sender} I demonstrate that
 the Sealed Sender protocol is vulnerable to a Statistical Disclosure Attack
 (SDA), which would allow a malicious or compelled Signal (or other secure
 end-to-end encrypted messengers that implement Sealed Sender) to link these
@@ -123,12 +128,12 @@ One-Way Anonymous messages due in part to delivery receipts: a feature of most
 online messengers which immediately alert a user when their message has been
 delivered.
 
-We further develop a more private protocol by formalizing Sealed Sender
+Further, I develop a more private protocol by formalizing Sealed Sender
 \emph{conversations} and decoupling a user's long term identity (such as Alice)
-from the destination of messages, thereby creating a provably private One-Way
-Anonymous message. We extend this framework to Two-Way Anonymous messages where
-the messaging service need not know either the sender nor the receiver of a
-message. 
+from the origin of messages, thereby creating a cryptographically private
+One-Way Anonymous message. This framework is extended to Two-Way Anonymous
+messages where the messaging service need not know either the sender nor the
+receiver of a message. 
 
 \section{Measurement of censorship in existing systems}
 A key component of user privacy is users being able to access content they
