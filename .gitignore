@@ -9,3 +9,4 @@ ThesisFilePkg*
 thesis.pdf
 *.toc
 .~*
+.vscode/
