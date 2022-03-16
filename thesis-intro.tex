@@ -1,21 +1,37 @@
 \chapter{Introduction}
 
-A \emph{Centralized System} is one in which the core functionality of the
-system is dictated by a single body that single-handedly determines the use and
+A \emph{centralized system} is one in which the core functionality of the system
+is dictated by a single body that single-handedly determines the use and
 behavior of the system. Any privacy guarantees are at the sole discretion of the
-system.
+system. Common examples of centralized systems of relevance to this dissertation
+are Twitter, Signal, and centralized censorship systems. In each of these cases
+the centralized systems have multiple servers spread across their areas of
+operation, around the world for global services such as Twitter and Signal and
+spread throughout a censored region in the case of censorship systems. However
+these servers function as a whole, often running the exact same code, and
+sharing the data they collect with the centralized system of use.
 
-Users of Centralized Systems have no inherent guarantee of \emph{privacy} for 
+Users of centralized systems have no inherent guarantee of \emph{privacy} for
 their data. How their data is collected and used is at the sole discretion of
 the service. Services often offer vague claims as to their privacy guarantees
-for users.
+for users: social media sites collect a mass amount of information on its users,
+extending past the content provided to the site; Facebook collects information
+on which people users interact with, including who you communicate with and
+which content you interact most often with, similarly Twitter collects metadata
+information on its users including browser information and operating
+system~\cite{fb-privacy,twitter-privacy}.
 
-I present here multiple avenues of research providing mechanisms for Centralized
-Systems to offer services with guaranteed privacy. These services are built upon
-privacy proofs which guarantee they limit information shared between users and
-the services and have the smallest possible surface area allowing these
-Centralized Systems to provably guarantee their services are fully enabling user
-privacy.
+With the current state of the internet functioning primarily under centralized
+systems that function on the data that users generate or inherently provide
+users might question ``Can privacy exist in centralized systems?''. This
+dissertation answers in the affirmative, privacy can be cultivated in these
+centralized systems by utilizing cryptographic protocols.
+
+I present here multiple avenues of research providing mechanisms for centralized
+systems to offer services with privacy. These services are built upon
+cryptographic protocols which limit information shared between users and the
+services and have the smallest possible surface area allowing these centralized
+systems to offer their services while fully enabling user privacy.
 
 In order to develop these tools which guarantee user privacy there must be a
 basis of what information is necessary for a service to function as well as how
@@ -25,23 +41,22 @@ restrict access to the content they offer.
 The concept of user privacy is inherently linked to the concept of service
 provider censorship. A service with no user privacy can censor a users access to
 content through that lack of privacy. By guaranteeing user privacy we restrict
-the possibility of a service censoring content to users. We delve into more
-details on this now.
+the possibility of a service censoring content to users. 
 
 This dissertation showcases three topics of enhancing user privacy in
 centralized systems examining three different avenues of censorship. First we
 examine content provider censorship, where a service that provides access to
 content censors that access. I present a solution to this problem applicable for
-content providers that which to demonstrate their commitment to user privacy.
-Second we consider metadata based censorship, where a service provider might
-censor access to content not based on the content itself but based on the
-metadata around that content such as who a message is sent from. I submit a
-provably private method to achieve privacy around the metadata associated with
-end-to-end encrypted messages, strengthening Sealed Sender, a technology geared
-towards privacy that is vulnerable to a simple Statistical Disclosure Attack.
-Finally we look at a measurement study of DNS censorship over IPv6 to learn how
-countries censor access to content differently over IPv6 compared to IPv4
-motivating avenues of censorship circumvention.
+content providers that wish to demonstrate their commitment to user privacy.
+Second I examine metadata based privacy, where a service provider might censor
+access to content not based on the content itself but based on the metadata
+around that content such as who a message is sent from. I submit a cryptographic
+method to achieve privacy around the metadata associated with end-to-end
+encrypted messages, strengthening Sealed Sender, a technology geared towards
+privacy that is vulnerable to a simple Statistical Disclosure Attack. Finally I
+showcase a measurement study of DNS censorship over IPv6 to learn how countries
+censor access to content differently over IPv6 compared to IPv4 motivating
+avenues of censorship circumvention.
 
 \section{Content Provider Censorship}
 Online censorship is done in many ways. In addition to blocking access to
