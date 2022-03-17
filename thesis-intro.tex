@@ -4,12 +4,13 @@ A \emph{centralized system} is one in which the core functionality of the system
 is dictated by a single body that single-handedly determines the use and
 behavior of the system. Any privacy guarantees are at the sole discretion of the
 system. Common examples of centralized systems of relevance to this dissertation
-are Twitter, Signal, and centralized censorship systems. In each of these cases
-the centralized systems have multiple servers spread across their areas of
-operation, around the world for global services such as Twitter and Signal and
-spread throughout a censored region in the case of censorship systems. However
-these servers function as a whole, often running the exact same code, and
-sharing the data they collect with the centralized system of use.
+are Twitter, Signal (a secure end-to-end encrypted messenger), and centralized
+censorship systems. In each of these cases the centralized systems have multiple
+servers spread across their areas of operation, around the world for global
+services such as Twitter and Signal and spread throughout a censored region in
+the case of censorship systems. However these servers function as a whole, often
+running the exact same code, and sharing the data they collect with the
+centralized system of use.
 
 Users of centralized systems have no inherent guarantee of \emph{privacy} for
 their data. How their data is collected and used is at the sole discretion of
@@ -17,15 +18,15 @@ the service. Services often offer vague claims as to their privacy guarantees
 for users: social media sites collect a mass amount of information on its users,
 extending past the content provided to the site; Facebook collects information
 on which people users interact with, including who you communicate with and
-which content you interact most often with, similarly Twitter collects metadata
-information on its users including browser information and operating
-system~\cite{fb-privacy,twitter-privacy}.
+which content you interact most often with~\cite{fb-privacy}. Similarly Twitter
+collects metadata information on its users including browser information and
+operating system~\cite{twitter-privacy}.
 
 With the current state of the internet functioning primarily under centralized
 systems that function on the data that users generate or inherently provide
-users might question ``Can privacy exist in centralized systems?''. This
-dissertation answers in the affirmative, privacy can be cultivated in these
-centralized systems by utilizing cryptographic protocols.
+\emph{can privacy exist in centralized systems?}. This dissertation answers in
+the affirmative: privacy can be cultivated in these centralized systems by
+utilizing cryptographic protocols.
 
 I present here multiple avenues of research providing mechanisms for centralized
 systems to offer services with privacy. These services are built upon
@@ -39,9 +40,9 @@ potential bad acting Centralized Systems abuse the service they offer to
 restrict access to the content they offer.
 
 The concept of user privacy is inherently linked to the concept of service
-provider censorship. A service with no user privacy can censor a users access to
-content through that lack of privacy. By guaranteeing user privacy we restrict
-the possibility of a service censoring content to users. 
+provider censorship. A service with no user privacy can censor a users's access
+to content through that lack of privacy. By guaranteeing user privacy we
+restrict the possibility of a service censoring content to users. 
 
 This dissertation showcases three topics of enhancing user privacy in
 centralized systems examining three different avenues of censorship. First we
@@ -85,12 +86,11 @@ a subset of content. The provider must censor access to the service as a whole
 or not at all.
 
 \emph{Proof of Censorship} extends this functionality by guaranteeing the
-content has not been modified by providing a cryptographic proof the content has
-not been modified since upload time.
-
-This further enables services to purposely remove content against its policies,
-users receive proof that the content has been removed (or modified) that the
-service can publicly announce.
+content has not been modified. This is done by providing a cryptographic proof
+the content has not been modified since upload time. This further enables
+services to purposely remove content against its policies, users receive proof
+that the content has been removed (or modified) that the service can publicly
+announce.
 
 \section{Metadata Privacy}
 In addition to the content that users provide to services they also inherently
@@ -129,11 +129,11 @@ online messengers which immediately alert a user when their message has been
 delivered.
 
 Further, I develop a more private protocol by formalizing Sealed Sender
-\emph{conversations} and decoupling a user's long term identity (such as Alice)
-from the origin of messages, thereby creating a cryptographically private
-One-Way Anonymous message. This framework is extended to Two-Way Anonymous
-messages where the messaging service need not know either the sender nor the
-receiver of a message. 
+\emph{conversations}, as opposed to individual messages, and decoupling a user's
+long term identity (such as Alice) from the origin of messages, thereby creating
+a cryptographically private One-Way Anonymous conversation. This framework is
+extended to Two-Way Anonymous messages where the messaging service need not know
+either the sender nor the receiver of a message. 
 
 \section{Measurement of censorship in existing systems}
 Internet censorship is a global problem that affects over half the world's
@@ -165,31 +165,31 @@ In \Cref{ch:v4vsv6}: \emph{Mind the IP Gap: Measuring the impact of IPv6 on DNS
 censorship} I present the results of our measurement of IPv6 DNS censorship
 compared to IPv4. We find that censors show a clear bias towards censoring in
 IPv4, and towards censoring native records (\texttt{A} records in IPv4 and
-\texttt{AAAA} records in IPv6). We break down differences at the country level
-statistically significant differences we discover by resolver and domain. We
-find that Thailand, Myanmar, Bangladesh, Pakistan, and Iran all present
-significant and consistent discrepancies across all resolvers and domains
-suggesting avenues for successful censorship circumvention opportunities in
-those countries.
+\texttt{AAAA} records in IPv6). We examine statistically significant differences
+we discover at the country level by resolver and domain. We find that Thailand,
+Myanmar, Bangladesh, Pakistan, and Iran all present significant and consistent
+discrepancies across all resolvers and domains suggesting avenues for successful
+censorship circumvention opportunities in those countries.
 
 \section{Thesis Structure}
 In this thesis I provide three projects geared towards enhancing privacy in
 centralized systems:
 
 \begin{enumerate}
-    \item Proof of Censorship --- this work showcases content provider
+    \item \emph{Proof of Censorship} --- this work showcases content provider
     censorship and how a service dedicated to being transparent about content it
     modifies or removes can implement a service which provides cryptographic
     promises that content has not been censored.
-    \item Improving Signal's Sealed Sender --- Signal's Sealed Sender provided a
-    first step towards user privacy but ultimately is vulnerable to a simple
-    Statistical Disclosure Attack allowing Signal (if compelled or malicious) to
-    determine who a user is messaging. This work provides a cryptographically
-    private mechanism to ensure any centralized messaging service can offer its
-    service without learning metadata information about which users are
-    messaging each other.
-    \item Mind the IP Gap --- this work measures how countries' centralized
-    censorship systems block access to the internet through DNS resolution over
-    the IPv4 and IPv6 internet allowing future work to implement systems allow
-    censored citizens to circumvent countries DNS censorship techniques.
+    \item \emph{Improving Signal's Sealed Sender} --- Signal's Sealed Sender
+    provided a first step towards user privacy but ultimately is vulnerable to a
+    simple Statistical Disclosure Attack allowing Signal (if compelled or
+    malicious) to determine who a user is messaging. This work provides a
+    cryptographically private mechanism to ensure any centralized messaging
+    service can offer its service without learning metadata information about
+    which users are messaging each other.
+    \item \emph{Mind the IP Gap} --- this work measures how countries'
+    centralized censorship systems block access to the internet through DNS
+    resolution over the IPv4 and IPv6 internet allowing future work to implement
+    systems to allow censored citizens to circumvent countries DNS censorship
+    techniques.
 \end{enumerate}
